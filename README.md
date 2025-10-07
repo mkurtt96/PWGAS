@@ -1,4 +1,9 @@
 # ⚡ PW.GAS
+> ⚠️ **Development Status:**  
+> This module is currently being extracted and refactored from **ProjectW**, a private Unreal Engine 5 prototype.  
+> While most systems are functional, interfaces and folder structures may still change as the refactor progresses.  
+> The goal is to make this a clean, reusable, standalone module for future Unreal projects.  
+
 
 **PW.GAS** is a modular Gameplay Ability System framework for **Unreal Engine 5**,  
 developed by **Metehan Goksel Kurtulan** as part of *ProjectW*,  
