@@ -66,5 +66,7 @@ See the [LICENSE](LICENSE) file for full details.
 
 ---
 
-**Author:** Metehan Goksel Kurtulan
-🎮 Game Developer – Systems & Gameplay Engineering
+## 👤 Author
+
+**Metehan Goksel Kurtulan (Iompaeqe)**  
+Game Developer — Systems & Gameplay Engineering  
