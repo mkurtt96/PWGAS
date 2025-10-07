@@ -27,7 +27,7 @@ This repository contains the three GAS-related core modules extracted and refact
 - Custom **GameplayEffectContext** supporting critical hits, blocks, and knockback impulses.  
 - Reusable **AbilityTasks** and **AsyncTasks** (e.g. cooldown tracking, target data collection).  
 - Utility libraries for **tag operations**, **attribute math**, and **effect context manipulation**.  
-- Clean C++/Blueprint balance — built for extensibility and clarity.
+- Clean C++/Blueprint balance, built for extensibility and clarity.
 
 ---
 
@@ -44,9 +44,9 @@ This repository contains the three GAS-related core modules extracted and refact
 
 **PW.GAS** is part of a larger modular ecosystem, including:
 
-- **PW.ProjectileFramework** – Reusable projectile, hit, and VFX logic.  
-- **PW.Inventory / PW.Shop** – Gameplay systems that integrate through `PWGASIntegration`.  
-- **PW.SharedTypes / PW.Contracts** – Common data types and interfaces used across PW modules.
+- **PW.ProjectileFramework** : Reusable projectile, hit, and VFX logic.  
+- **PW.Inventory / PW.Shop** : Gameplay systems that integrate through `PWGASIntegration`.  
+- **PW.SharedTypes / PW.Contracts** : Common data types and interfaces used across PW modules.
 
 ---
 
