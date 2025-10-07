@@ -2,7 +2,13 @@
 
 #include "PWAttributes.h"
 
+#include "BasicAttributes/AS_Health.h"
+
 #define LOCTEXT_NAMESPACE "FPWAttributesModule"
+
+namespace PWTags::Attributes { 
+	UE_DEFINE_GAMEPLAY_TAG(Attribute,"Attribute");
+}
 
 void FPWAttributesModule::StartupModule()
 {
