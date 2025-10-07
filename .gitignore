@@ -17,3 +17,60 @@ Build
 .idea/.idea.ProjectW.dir/.idea/workspace.xml
 .idea/.idea.ProjectW.dir/.idea
 Builds
+
+# Build and cache folders
+[Bb]uild/
+[Bb]inaries/
+[Ii]ntermediate/
+[Dd]erivedDataCache/
+[Ss]aved/
+*.VC.db
+*.VC.opendb
+
+# Plugin build artifacts
+**/Binaries/
+**/Build/
+**/Intermediate/
+**/DerivedDataCache/
+**/Saved/
+
+# Visual Studio / Rider / Code IDE files
+.vscode/
+.idea/
+.vs/
+*.sln
+*.suo
+*.user
+*.userprefs
+*.opendb
+*.VC.db
+
+# Temporary or generated files
+*.log
+*.tlog
+*.obj
+*.pdb
+*.idb
+*.db
+*.tmp
+*.cache
+*.sdf
+*.suo
+*.ipch
+*.aps
+*.ncb
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Unreal autosaves and backups
+*_Backup*.uasset
+*_BuiltData.uasset
+*.umap_autosave
+*.uasset_autosave
+
+# Auto-generated config files
+Saved/
+DerivedDataCache/
