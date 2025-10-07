@@ -59,7 +59,8 @@ intended for use across any Unreal Engine 5 project.
 
 ---
 
-## 🧾 License
+## 📄 License
+
 
 This project is licensed under the **MIT License**.  
 See the [LICENSE](LICENSE) file for full details.
@@ -68,5 +69,5 @@ See the [LICENSE](LICENSE) file for full details.
 
 ## 👤 Author
 
-**Metehan Goksel Kurtulan (Iompaeqe)**  
+**Metehan Goksel Kurtulan**  
 Game Developer — Systems & Gameplay Engineering  
