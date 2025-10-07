@@ -1,7 +1,7 @@
 # ⚡ PW.GAS
 
 **PW.GAS** is a modular Gameplay Ability System framework for **Unreal Engine 5**,  
-developed by **Metehan Goksel Kurtulan (Iompaeqe)** as part of *ProjectW* —  
+developed by **Metehan Goksel Kurtulan** as part of *ProjectW*,  
 a multiplayer prototype built around a tag-driven, modular architecture.
 
 This repository contains the three GAS-related core modules extracted and refactored from *ProjectW*.
