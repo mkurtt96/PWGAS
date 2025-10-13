@@ -25,7 +25,12 @@ public class PWGasCore : ModuleRules
 		PublicDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"Core",
+				"Core", 
+				"GameplayAbilities",
+				"GameplayTags",
+				"DeveloperSettings",
+				"GameplayTasks", 
+				"PWSharedTypes",
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
@@ -38,6 +43,10 @@ public class PWGasCore : ModuleRules
 				"Engine",
 				"Slate",
 				"SlateCore",
+				"GameplayAbilities",
+				"GameplayTags",
+				"DeveloperSettings", 
+				"PWContracts"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);
