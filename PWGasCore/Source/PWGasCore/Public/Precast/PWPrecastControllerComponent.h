@@ -4,10 +4,15 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "Precast/Data/PWPrecastTypes.h"
-#include "Targeting/Data/PWTargetingTypes.h"
+#include "Precast/Data/PWPrecastData.h"
+#include "Targeting/Data/PWTargetingData.h"
 #include "PWPrecastControllerComponent.generated.h"
 
+
+class UPWTargetingSource;
+class UPWRangePolicy;
+class UPWPrecastVisualizer;
+class UPWTargetResolver;
 
 UCLASS(ClassGroup=(GASCore), meta=(BlueprintSpawnableComponent))
 class PWGASCORE_API UPWPrecastControllerComponent : public UActorComponent
@@ -18,7 +23,7 @@ public:
 	UPWPrecastControllerComponent();
 
 	UFUNCTION(BlueprintCallable, Category="GASCore|Precast")
-	void StartPrecast(TSubclassOf<UObject> TargetingSourceClass, TSubclassOf<UObject> RangePolicyClass, TSubclassOf<UObject> VisualizerClass, float PreviewRadius, FName OriginSocket, FPWProjectileSimConfig ProjectileConfig);
+	void StartPrecast(UPWTargetingSource* InTargetingSource, UPWRangePolicy* InRangePolicy, UPWTargetResolver* InTargetResolver, UPWPrecastVisualizer* InVisualizer, float InPreviewRadius, float InPreviewRange, FName InOriginSocket, FPWProjectileSimConfig InProjectileConfig);
 
 	UFUNCTION(BlueprintCallable, Category="GASCore|Precast")
 	void StopPrecast();
@@ -34,14 +39,16 @@ protected:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 private:
-	UPROPERTY() UObject* TargetingObj = nullptr; // IPWTargetingSource
-	UPROPERTY() UObject* RangeObj = nullptr; // IPWRangePolicy
-	UPROPERTY() UObject* VisualObj = nullptr; // IPWPrecastVisualizer
+	UPROPERTY() UPWTargetingSource* TargetingSource = nullptr;
+	UPROPERTY() UPWRangePolicy* RangePolicy = nullptr;
+	UPROPERTY() UPWPrecastVisualizer* Visualizer = nullptr;
+	UPROPERTY() UPWTargetResolver* TargetResolver = nullptr;
 
 	bool bRunning = false;
 
 	// cached authoring
-	float PreviewRadius = 120.f;
+	float PreviewRadius = 0.f;
+	float PreviewRange = 0.f;
 	FName OriginSocket = NAME_None;
 	FPWProjectileSimConfig ProjCfg;
 

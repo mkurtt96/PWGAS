@@ -36,14 +36,14 @@ void UPWTagFunctions::SetAbilityCancelable(UGameplayAbility* Ability, bool bIsCa
 
 FGameplayTag UPWTagFunctions::GetAbilityCooldownTag(const FGameplayTag& AbilityTag)
 {
-	if (AbilityTag.MatchesTag(PWTags::Ability::Spell::Root))
-		return PWTags::Ability::Spell::GetCooldownTag(AbilityTag);
+	if (AbilityTag.MatchesTag(PWTags::Ability::Skill::Root))
+		return PWTags::Ability::Skill::GetCooldownTag(AbilityTag);
 	return FGameplayTag();
 }
 
 FGameplayTag UPWTagFunctions::GetAbilityTagWithSuffix(const FGameplayTag& AbilityTag, const FString& Suffix)
 {
-	if (AbilityTag.MatchesTag(PWTags::Ability::Spell::Root))
+	if (AbilityTag.MatchesTag(PWTags::Ability::Skill::Root))
 	{
 		FString FullString = AbilityTag.ToString() + TEXT(".") + Suffix;
 		return FGameplayTag::RequestGameplayTag(*FullString, false);

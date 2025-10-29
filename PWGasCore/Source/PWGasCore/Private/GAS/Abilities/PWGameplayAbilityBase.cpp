@@ -6,15 +6,17 @@
 #include "AbilitySystemComponent.h"
 #include "GameplayTagsManager.h"
 #include "GameplayTagsSettings.h"
-#include "GAS/Abilities/Modules/PWAbilityTargetingModule.h"
+#include "GameFramework/PlayerState.h"
+#include "GAS/Abilities/Modules/ActionModules/PWAbilityMultiActorModule.h"
+#include "GAS/Abilities/Modules/ActionModules/PWActionModule.h"
+#include "GAS/Abilities/Modules/ControlModules/PWAbilityTargetingModule.h"
+#include "GAS/Abilities/Modules/DataModules/PWAbilityRadiusModule.h"
 #include "PWGasCore/Public/GAS/Abilities/Modules/PWAbilityModule.h"
 #include "GAS/ASC/PWAbilitySystemComponent.h"
 #include "GAS/ASC/PWASC_InputBinding.h"
 #include "GAS/Data/FPWAbilityInputListener.h"
 #include "GAS/Tags/GASCoreTags.h"
-#include "Precast/PWPrecastControllerComponent.h"
-#include "Targeting/Data/PWTargetingTypes.h"
-#include "Targeting/Interfaces/PWTargetingInterfaces.h"
+#include "Targeting/Data/PWTargetingData.h"
 #include "VisualAndAudio/PWAnimSetProvider.h"
 
 
@@ -36,29 +38,31 @@ void UPWGameplayAbilityBase::ActivateAbility(const FGameplayAbilitySpecHandle Ha
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-	for (UPWAbilityModule* Comp : AbilityModules)
+	ForEachModule([this](UPWAbilityModule* Mod)
 	{
-		if (Comp)
-		{
-			Comp->Initialize(this);
-			Comp->OnAbilityActivated();
-		}
-	}
+		Mod->Initialize(this);
+		Mod->OnAbilityActivated();
+	});
 }
 
-UPWAbilityModule* UPWGameplayAbilityBase::GetModuleByClass(const TSubclassOf<UPWAbilityModule> ComponentClass) const
+USpellParams* UPWGameplayAbilityBase::MakeSpellParams()
 {
-	for (UPWAbilityModule* Comp : AbilityModules)
-	{
-		if (Comp && Comp->IsA(ComponentClass))
-			return Comp;
-	}
-	return nullptr;
+	USpellParams* Params = NewObject<USpellParams>(this);
+	Params->SourceAvatar = GetAvatarActorFromActorInfo();
+	Params->AbilityLevel = GetAbilityLevel();
+
+	if (const APlayerState* PS = GetPawn() ? GetPawn()->GetPlayerState() : nullptr)
+		Params->SourcePlayerUniqueId = PS->GetUniqueId();
+
+	if (!Params->More)
+		Params->More = NewObject<UMultiDataArray>(Params);
+
+	return Params;
 }
 
 FPWTargetingResult UPWGameplayAbilityBase::ComputeTargetOnce() const
 {
-	if (UPWAbilityTargetingModule* TMod = GetModule<UPWAbilityTargetingModule>())
+	if (UPWAbilityTargetingModule* TMod = GetControlModule<UPWAbilityTargetingModule>())
 	{
 		FPWTargetingResult R;
 		TMod->ComputeTarget(R);
@@ -108,20 +112,18 @@ float UPWGameplayAbilityBase::GetCooldown(int32 Level) const
 	return Cooldown.GetValueAtLevel(Level);
 }
 
-UAnimMontage* UPWGameplayAbilityBase::GetAnimationMontageFromActor() const
+void UPWGameplayAbilityBase::GetAnimMontageFromActor(UAnimMontage*& OutMontage, float& OutAnimRate) const
 {
 	const AActor* AvatarActor = GetAvatarActorFromActorInfo();
 	if (!AvatarActor || !AnimationTag.IsValid())
-		return nullptr;
+		return;
 
 	if (AvatarActor->GetClass()->ImplementsInterface(UPWAnimSetProvider::StaticClass()))
 	{
-		UAnimMontage* MontageForTag = IPWAnimSetProvider::Execute_GetMontageForTag(AvatarActor, AnimationTag);
-		return MontageForTag;
+		OutMontage = IPWAnimSetProvider::Execute_GetMontageForTag(AvatarActor, AnimationTag, OutAnimRate);
 	}
 
 	UE_LOG(LogTemp, Warning, TEXT("AvatarActor: %s does not use the IPWAnimSetProvider, See UPWGameplayAbilityBase::GetAnimationMontageFromActor"), *AvatarActor->GetName())
-	return nullptr;
 }
 
 FGameplayTagContainer UPWGameplayAbilityBase::GetCooldownGameplayTags() const
@@ -134,7 +136,7 @@ FGameplayTagContainer UPWGameplayAbilityBase::GetCooldownGameplayTags() const
 
 	if (AbilityTag.IsValid())
 	{
-		const FGameplayTag CooldownTag = PWTags::Ability::Spell::GetCooldownTag(AbilityTag);
+		const FGameplayTag CooldownTag = PWTags::Ability::Skill::GetCooldownTag(AbilityTag);
 		if (CooldownTag.IsValid())
 			MutableTags.AddTag(CooldownTag);
 	}
@@ -147,9 +149,9 @@ void UPWGameplayAbilityBase::ApplyCooldown(const FGameplayAbilitySpecHandle Hand
 	if (const UGameplayEffect* CooldownGE = GetCooldownGameplayEffect())
 	{
 		const FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(CooldownGE->GetClass(), GetAbilityLevel());
-		const FGameplayTag CooldownTag = PWTags::Ability::Spell::GetCooldownTag(AbilityTag);
+		const FGameplayTag CooldownTag = PWTags::Ability::Skill::GetCooldownTag(AbilityTag);
 		SpecHandle.Data.Get()->DynamicGrantedTags.AppendTags(CooldownTag.GetSingleTagContainer());
-		SpecHandle.Data.Get()->SetSetByCallerMagnitude(PWTags::Ability::Cooldown, Cooldown.GetValueAtLevel(GetAbilityLevel()));
+		SpecHandle.Data.Get()->SetSetByCallerMagnitude(PWTags::Ability::SetByCaller::Cooldown, Cooldown.GetValueAtLevel(GetAbilityLevel()));
 		ApplyGameplayEffectSpecToOwner(Handle, ActorInfo, ActivationInfo, SpecHandle);
 	}
 }
@@ -162,11 +164,10 @@ void UPWGameplayAbilityBase::CancelAbility(const FGameplayAbilitySpecHandle Hand
 void UPWGameplayAbilityBase::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
-	for (UPWAbilityModule* Comp : AbilityModules)
+	ForEachModule([this](UPWAbilityModule* Mod)
 	{
-		if (Comp)
-			Comp->OnAbilityEnded();
-	}
+		Mod->OnAbilityEnded();
+	});
 }
 
 void UPWGameplayAbilityBase::HandleTaggedAbilityInput_Implementation(const EPWInputEventType& InputType, const FGameplayTag& InputTag)
@@ -194,7 +195,7 @@ void UPWGameplayAbilityBase::GetHandledInputTags_Implementation(TArray<FGameplay
 
 void UPWGameplayAbilityBase::RegisterAbilityInputListener_Implementation(const TArray<FPWAbilityInputListener>& Listeners, const bool bExclusive)
 {
-	if (UPWAbilitySystemComponent* ASC = Cast<UPWAbilitySystemComponent>(GetAbilitySystemComponentFromActorInfo()))
+	if (const UPWAbilitySystemComponent* ASC = Cast<UPWAbilitySystemComponent>(GetAbilitySystemComponentFromActorInfo()))
 	{
 		ASC->Input().RegisterAbilityInputListener(GetCurrentAbilitySpecHandle(), Listeners, bExclusive);
 	}
@@ -202,45 +203,112 @@ void UPWGameplayAbilityBase::RegisterAbilityInputListener_Implementation(const T
 
 void UPWGameplayAbilityBase::UnregisterAbilityInputListener_Implementation()
 {
-	if (UPWAbilitySystemComponent* ASC = Cast<UPWAbilitySystemComponent>(GetAbilitySystemComponentFromActorInfo()))
+	if (const UPWAbilitySystemComponent* ASC = Cast<UPWAbilitySystemComponent>(GetAbilitySystemComponentFromActorInfo()))
 	{
 		ASC->Input().UnregisterAbilityInputListener(GetCurrentAbilitySpecHandle());
 	}
 }
 
-UPWAbilityActorModule* UPWGameplayAbilityBase::GetActorModule(int32 Index) const
+bool UPWGameplayAbilityBase::MatchesBinding(const TMap<EPWInputEventType, FGameplayTagContainer>& Map, EPWInputEventType Type, const FGameplayTag& Tag)
 {
-	return GetModule<UPWAbilityActorModule>(Index);
+	if (const FGameplayTagContainer* C = Map.Find(Type))
+		return C->HasTagExact(Tag);
+	return false;
 }
 
-UPWAbilityProjectileModule* UPWGameplayAbilityBase::GetProjectileModule(int32 Index) const
+void UPWGameplayAbilityBase::EnsureRequiredDataModules()
 {
-	return GetModule<UPWAbilityProjectileModule>(Index);
+	if (!ActionModule)
+		return;
+
+	TArray<TSubclassOf<UPWDataModule>> Required;
+	ActionModule->GetRequiredDataModules(Required);
+
+	for (TSubclassOf<UPWDataModule> DataClass : Required)
+	{
+		if (!DataClass)
+			continue;
+
+		bool bExists = false;
+		for (UPWDataModule* M : DataModules)
+			if (M && M->IsA(DataClass))
+			{
+				bExists = true;
+				break;
+			}
+
+		if (!bExists)
+		{
+			UPWDataModule* NewData = NewObject<UPWDataModule>(this, DataClass, NAME_None, RF_Transactional);
+			DataModules.Add(NewData);
+			NewData->Initialize(this);
+			UE_LOG(LogTemp, Log, TEXT("[PWGASCore] Auto-added required DataModule: %s"), *DataClass->GetName());
+		}
+	}
 }
 
-UPWAbilityPrecastModule* UPWGameplayAbilityBase::GetPrecastModule(int32 Index) const
+void UPWGameplayAbilityBase::ForEachModule(TFunctionRef<void(UPWAbilityModule*)> Callback) const
 {
-	return GetModule<UPWAbilityPrecastModule>(Index);
+	if (ActionModule)
+		Callback(ActionModule);
+
+	for (UPWDataModule* M : DataModules)
+		if (M)
+			Callback(M);
+
+	for (UPWControlModule* M : ControlModules)
+		if (M)
+			Callback(M);
 }
 
-UPWAbilityEffectModule* UPWGameplayAbilityBase::GetEffectModule(int32 Index) const
+UPWAbilityActorModule* UPWGameplayAbilityBase::GetActorModule() const
 {
-	return GetModule<UPWAbilityEffectModule>(Index);
+	return GetActionModule<UPWAbilityActorModule>();
 }
 
-UPWAbilityAuraModule* UPWGameplayAbilityBase::GetAuraModule(int32 Index) const
+UPWAbilityMultiActorModule* UPWGameplayAbilityBase::GetMultiActorModule() const
 {
-	return GetModule<UPWAbilityAuraModule>(Index);
+	return GetActionModule<UPWAbilityMultiActorModule>();
 }
 
-UPWAbilityTargetingModule* UPWGameplayAbilityBase::GetTargetingModule(int32 Index) const
+UPWAbilityProjectileModule* UPWGameplayAbilityBase::GetProjectileModule() const
 {
-	return GetModule<UPWAbilityTargetingModule>(Index);
+	return GetActionModule<UPWAbilityProjectileModule>();
 }
 
-UPWAbilityRangeModule* UPWGameplayAbilityBase::GetRangeModule(int32 Index) const
+UPWAbilityMultiProjectileModule* UPWGameplayAbilityBase::GetMultiProjectileModule() const
 {
-	return GetModule<UPWAbilityRangeModule>(Index);
+	return GetActionModule<UPWAbilityMultiProjectileModule>();
+}
+
+UPWAbilityPrecastModule* UPWGameplayAbilityBase::GetPrecastModule() const
+{
+	return GetControlModule<UPWAbilityPrecastModule>();
+}
+
+UPWAbilityEffectModule* UPWGameplayAbilityBase::GetEffectModule() const
+{
+	return GetDataModule<UPWAbilityEffectModule>();
+}
+
+UPWAbilityAuraModule* UPWGameplayAbilityBase::GetAuraModule() const
+{
+	return GetActionModule<UPWAbilityAuraModule>();
+}
+
+UPWAbilityTargetingModule* UPWGameplayAbilityBase::GetTargetingModule() const
+{
+	return GetControlModule<UPWAbilityTargetingModule>();
+}
+
+UPWAbilityRangeModule* UPWGameplayAbilityBase::GetRangeModule() const
+{
+	return GetDataModule<UPWAbilityRangeModule>();
+}
+
+UPWAbilityRadiusModule* UPWGameplayAbilityBase::GetRadiusModule() const
+{
+	return GetDataModule<UPWAbilityRadiusModule>();
 }
 
 #if WITH_EDITOR
@@ -296,8 +364,9 @@ void UPWGameplayAbilityBase::GenerateIdentityTag()
 	FString ClassName = GetClass()->GetName();
 	ClassName.RemoveFromEnd(TEXT("_C"));
 	if (ClassName.StartsWith(TEXT("BP_"))) { ClassName.RightChopInline(3); }
+	if (ClassName.StartsWith(TEXT("GA_"))) { ClassName.RightChopInline(3); }
 
-	const FString IdentityStr = FString::Printf(TEXT("Ability.Spell.%s"), *ClassName);
+	const FString IdentityStr = FString::Printf(TEXT("Ability.Skill.%s"), *ClassName);
 	const FString CooldownStr = IdentityStr + TEXT(".Cooldown");
 
 	EnsureProjectTagExists(IdentityStr, TEXT("Auto-generated by GASCore"));
@@ -315,12 +384,7 @@ void UPWGameplayAbilityBase::GenerateIdentityTag()
 	{
 		ActivationBlockedTags.AddTag(CooldownTag);
 	}
-	if (!ActivationBlockedTags.HasTagExact(PWTags::Ability::State::Casting))
-	{
-		ActivationBlockedTags.AddTag(PWTags::Ability::State::Casting);
-	}
-
-
+	
 	SyncIdentityIntoAssetTags();
 
 	PostEditChange();
@@ -337,18 +401,7 @@ void UPWGameplayAbilityBase::PostEditChangeProperty(FPropertyChangedEvent& E)
 {
 	Super::PostEditChangeProperty(E);
 	SyncIdentityIntoAssetTags();
-
-	if (E.GetPropertyName() == GET_MEMBER_NAME_CHECKED(UPWGameplayAbilityBase, AbilityModules))
-	{
-		TMap<UClass*, int32> Counters;
-		for (UPWAbilityModule* M : AbilityModules)
-		{
-			if (!M) continue;
-			int32& Count = Counters.FindOrAdd(M->GetClass());
-			M->ModuleIndex = Count;
-			++Count;
-		}
-	}
+	EnsureRequiredDataModules();
 }
 
 #endif

@@ -8,6 +8,10 @@
 #include "PWAttributeSet_Tagged.h"
 #include "PWAttributeSet_ClampedAttribute.generated.h"
 
+#define ClampedAttribute(Name)\
+UPROPERTY(VisibleAnywhere, BlueprintReadOnly) \
+TObjectPtr<class UPWAttributeSet_ClampedAttribute> Name;
+
 //put in .h outside class
 #define DeclareGameplayTag_Clamped(Name) \
 namespace PWTags::Attributes { \

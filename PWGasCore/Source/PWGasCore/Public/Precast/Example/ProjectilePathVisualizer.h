@@ -1,20 +1,20 @@
-﻿// copyright mkurtt96
-
-#pragma once
-
+﻿// // copyright mkurtt96
+//
+// #pragma once
+//
 // #include "CoreMinimal.h"
 // #include "Components/SplineComponent.h"
 // #include "Precast/Data/PWPrecastInterfaces.h"
 // #include "UObject/Object.h"
 // #include "ProjectilePathVisualizer.generated.h"
-
-/**
- *	THIS IS AN EXAMPLE CLASS FOR THE PRECAST SYSTEMS' USAGE.
- *	APrecastDecal Actor class is a basic actor that will show up to visualize the precast. Any type of visual setup can be used.
- */
-
+//
+// /**
+//  *	THIS IS AN EXAMPLE CLASS FOR THE PRECAST SYSTEMS' USAGE.
+//  *	APrecastDecal Actor class is a basic actor that will show up to visualize the precast. Any type of visual setup can be used.
+//  */
+//
 // UCLASS()
-// class PWGASCORE_API UProjectilePathVisualizer : public UObject, public IPWPrecastVisualizer
+// class PWGASCORE_API UProjectilePathVisualizer : public UPWPrecastVisualizer
 // {
 // 	GENERATED_BODY()
 // public:

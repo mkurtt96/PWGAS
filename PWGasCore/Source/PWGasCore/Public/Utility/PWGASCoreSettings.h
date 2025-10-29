@@ -5,9 +5,8 @@
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
 #include "Engine/DeveloperSettings.h"
+#include "GAS/Abilities/PWAbilityRegistry.h"
 #include "PWGASCoreSettings.generated.h"
-
-class UPWAbilityRegistry;
 /**
  * 
  */

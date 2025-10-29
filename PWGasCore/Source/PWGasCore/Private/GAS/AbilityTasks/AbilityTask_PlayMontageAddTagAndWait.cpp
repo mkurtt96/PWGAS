@@ -16,7 +16,6 @@ UAbilityTask_PlayMontageAddTagAndWait::UAbilityTask_PlayMontageAddTagAndWait(con
 {
 	Rate = 1.f;
 	bStopWhenAbilityEnds = true;
-	TagsToAdd.AddTag(PWTags::Ability::State::Casting);
 }
 
 void UAbilityTask_PlayMontageAddTagAndWait::OnMontageBlendingOut(UAnimMontage* Montage, const bool bInterrupted) const

@@ -58,7 +58,7 @@ void UWaitCooldownsChange::CooldownEffectApplied(UAbilitySystemComponent* Abilit
 
 	if (Tags.HasAnyExact(CooldownTags))
 	{
-		const FGameplayTag CooldownTag = UPWTagFunctions::FindTagWithSuffix(Tags, PWTags::Ability::Spell::GetCooldownSuffix());
+		const FGameplayTag CooldownTag = UPWTagFunctions::FindTagWithSuffix(Tags, PWTags::Ability::Skill::GetCooldownSuffix());
 		if (!CooldownTag.IsValid())
 		{
 			UE_LOG(LogTemp, Warning, TEXT("No cooldown tag found in applied GE tags!"));

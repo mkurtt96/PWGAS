@@ -6,21 +6,25 @@
 #include "Abilities/GameplayAbility.h"
 #include "GameplayTagsSettings.h"
 #include "Ability/SpellParams.h"
-#include "GameFramework/PlayerState.h"
 #include "GAS/Data/FPWAbilityInputListener.h"
 #include "GAS/Interfaces/PWTaggedAbilityInput.h"
-#include "Targeting/Data/PWTargetingTypes.h"
+#include "Modules/PWAbilityModule.h"
+#include "Modules/ControlModules/PWControlModule.h"
+#include "Modules/DataModules/PWDataModule.h"
+#include "Targeting/Data/PWTargetingData.h"
 #include "PWGameplayAbilityBase.generated.h"
 
+class UPWAbilityMultiActorModule;
+class UPWAbilityProjectileModule;
+class UPWAbilityMultiProjectileModule;
+class UPWAbilityRadiusModule;
+class UPWActionModule;
+class UPWAbilityActorModule;
+class UPWAbilityPrecastModule;
+class UPWAbilityEffectModule;
+class UPWAbilityAuraModule;
 class UPWAbilityTargetingModule;
 class UPWAbilityRangeModule;
-class UPWAbilityPrecastModule;
-class UPWAbilityAuraModule;
-class UPWAbilityEffectModule;
-class UPWAbilityProjectileModule;
-class UPWAbilityActorModule;
-class UPWAbilityModule;
-
 
 UCLASS(Blueprintable)
 class PWGASCORE_API UPWGameplayAbilityBase : public UGameplayAbility, public IPWTaggedAbilityInput
@@ -37,45 +41,70 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Ability|Data")
 	FScalableFloat Cooldown;
 
+	USpellParams* MakeSpellParams();
+
+	// == Modules  == //
+	// ============== //
+
 	UPROPERTY(EditDefaultsOnly, Instanced, Category="Ability|Modules")
-	TArray<UPWAbilityModule*> AbilityModules;
+	TObjectPtr<UPWActionModule> ActionModule;
+	UPROPERTY(EditDefaultsOnly, Instanced, Category="Ability|Modules")
+	TArray<TObjectPtr<UPWDataModule>> DataModules;
+	UPROPERTY(EditDefaultsOnly, Instanced, Category="Ability|Modules")
+	TArray<TObjectPtr<UPWControlModule>> ControlModules;
 
-	UFUNCTION(BlueprintCallable, Category="Ability|Modules")
-	UPWAbilityModule* GetModuleByClass(TSubclassOf<UPWAbilityModule> ComponentClass) const;
-	
 	template <typename T>
-	T* GetModule(int32 Index = 0) const
+	T* GetActionModule() const
 	{
-		TArray<T*> Matches;
-		for (UPWAbilityModule* Comp : AbilityModules)
-			if (T* AsType = Cast<T>(Comp))
-				Matches.Add(AsType);
+		if (DataModules.Num() == 0)
+			return nullptr;
 
-		if (Matches.IsValidIndex(Index))
-			return Matches[Index];
-		
-		UE_LOG(LogTemp, Warning, TEXT("Ability %s: Requested module %s[%d] but only %d exist."), *GetNameSafe(this), *T::StaticClass()->GetName(), Index, Matches.Num());
+		return Cast<T>(ActionModule);
+	}
+
+	template <typename T>
+	T* GetDataModule() const
+	{
+		for (UPWDataModule* Mod : DataModules)
+			if (Mod && Mod->IsA(T::StaticClass()))
+				return Cast<T>(Mod);
+
 		return nullptr;
 	}
 
 	template <typename T>
-	T* MakeSpellParams()
+	T* GetControlModule() const
 	{
-		static_assert(TIsDerivedFrom<T, USpellParamsBase>::IsDerived, "T must derive from USpellParamsBase");
-	
-		T* Params = NewObject<T>(this);
-		Params->SourceAvatar = GetAvatarActorFromActorInfo();
-		Params->AbilityLevel = GetAbilityLevel();
+		for (UPWControlModule* Mod : ControlModules)
+			if (Mod && Mod->IsA(T::StaticClass()))
+				return Cast<T>(Mod);
 
-		if (const APlayerState* PS = GetPawn() ? GetPawn()->GetPlayerState() : nullptr)
-			Params->SourcePlayerUniqueId = PS->GetUniqueId();
-
-		if (!Params->More)
-			Params->More = NewObject<UMultiDataArray>(Params);
-
-		return Params;
+		return nullptr;
 	}
-	
+
+	void ForEachModule(TFunctionRef<void(UPWAbilityModule*)> Callback) const;
+
+	UFUNCTION(BlueprintPure, Category="Modules")
+	UPWAbilityActorModule* GetActorModule() const;
+	UFUNCTION(BlueprintPure, Category="Modules")
+	UPWAbilityMultiActorModule* GetMultiActorModule() const;
+	UFUNCTION(BlueprintPure, Category="Modules")
+	UPWAbilityProjectileModule* GetProjectileModule() const;
+	UFUNCTION(BlueprintPure, Category="Modules")
+	UPWAbilityMultiProjectileModule* GetMultiProjectileModule() const;
+	UFUNCTION(BlueprintPure, Category="Modules")
+	UPWAbilityPrecastModule* GetPrecastModule() const;
+	UFUNCTION(BlueprintPure, Category="Modules")
+	UPWAbilityEffectModule* GetEffectModule() const;
+	UFUNCTION(BlueprintPure, Category="Modules")
+	UPWAbilityAuraModule* GetAuraModule() const;
+	UFUNCTION(BlueprintPure, Category="Modules")
+	UPWAbilityTargetingModule* GetTargetingModule() const;
+	UFUNCTION(BlueprintPure, Category="Modules")
+	UPWAbilityRangeModule* GetRangeModule() const;
+	UFUNCTION(BlueprintPure, Category="Modules")
+	UPWAbilityRadiusModule* GetRadiusModule() const;
+
 	// == Gameplay Targeting  == //
 	// ========================= //
 
@@ -101,17 +130,18 @@ public:
 	FGameplayTag AnimationTag;
 
 	// Lightweight extractor for a single TargetData entry
-	UAnimMontage* GetAnimationMontageFromActor() const;
+	UFUNCTION(BlueprintPure, Category="Animation")
+	void GetAnimMontageFromActor(UAnimMontage*& OutMontage, float& OutAnimRate) const;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Audio")
 	FGameplayTag StartSoundCue;
 
 	// == IPWTaggedAbilityInput  == //
 	// ============================ //
-	
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Ability|Input")
 	TMap<EPWInputEventType, FGameplayTagContainer> InputTagBindings;
-	
+
 	UFUNCTION(BlueprintCallable)
 	virtual void HandleTaggedAbilityInput_Implementation(const EPWInputEventType& InputType, const FGameplayTag& InputTag) override;
 	UFUNCTION(BlueprintCallable)
@@ -143,7 +173,7 @@ protected:
 	virtual void CancelAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateCancelAbility) override;
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
-	
+
 	// == InputHandling  == //
 	// ==================== //
 
@@ -153,37 +183,17 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent, Category="Ability|Input")
 	void OnInputReleased(FGameplayTag InputTag);
 
-	// == InputHandling  == //
-	// ==================== //
+	static bool MatchesBinding(const TMap<EPWInputEventType, FGameplayTagContainer>& Map, EPWInputEventType Type, const FGameplayTag& Tag);
 
+	// == Modules  == //
+	// ============== //
 
-	UFUNCTION(BlueprintPure, Category="Modules")
-	UPWAbilityActorModule* GetActorModule(int32 Index = 0) const;
-
-	UFUNCTION(BlueprintPure, Category="Modules")
-	UPWAbilityProjectileModule* GetProjectileModule(int32 Index = 0) const;
-
-	UFUNCTION(BlueprintPure, Category="Modules")
-	UPWAbilityPrecastModule* GetPrecastModule(int32 Index = 0) const;
-
-	UFUNCTION(BlueprintPure, Category="Modules")
-	UPWAbilityEffectModule* GetEffectModule(int32 Index = 0) const;
-
-	UFUNCTION(BlueprintPure, Category="Modules")
-	UPWAbilityAuraModule* GetAuraModule(int32 Index = 0) const;
-
-	UFUNCTION(BlueprintPure, Category="Modules")
-	UPWAbilityTargetingModule* GetTargetingModule(int32 Index = 0) const;
-
-	UFUNCTION(BlueprintPure, Category="Modules")
-	UPWAbilityRangeModule* GetRangeModule(int32 Index = 0) const;
+	void EnsureRequiredDataModules();
 
 private:
+	static TMap<UClass*, TArray<UPWAbilityModule*>> CachedByType;
 
 
-
-
-	
 	// == Editor Helpers  == //
 	// ===================== //
 

@@ -54,8 +54,6 @@ void FPWASC_InputBinding::AbilityInputTagReleased(const FGameplayTag& InputTag)
 {
 	if (!InputTag.IsValid()) return;
 
-	if (!InputTag.IsValid()) return;
-
 	if (DispatchToExclusiveListeners(InputTag, EPWInputEventType::Released, true))
 		return;
 

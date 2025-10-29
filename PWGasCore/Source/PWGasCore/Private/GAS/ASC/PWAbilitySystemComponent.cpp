@@ -86,7 +86,7 @@ bool UPWAbilitySystemComponent::GetCooldownRemainingForTag(const FGameplayTag& C
 
 bool UPWAbilitySystemComponent::GetCooldownRemainingForAbilityTag(const FGameplayTag& AbilityTag, float& TimeRemaining, float& TotalDuration) const
 {
-	const FGameplayTag CooldownTag = PWTags::Ability::Spell::GetCooldownTag(AbilityTag);
+	const FGameplayTag CooldownTag = PWTags::Ability::Skill::GetCooldownTag(AbilityTag);
 	return CooldownTag.IsValid() ? GetCooldownRemainingForTag(CooldownTag, TimeRemaining, TotalDuration) : 0;
 }
 
@@ -99,7 +99,7 @@ int32 UPWAbilitySystemComponent::ClearCooldownByTag(const FGameplayTag& Cooldown
 
 int32 UPWAbilitySystemComponent::ClearCooldownForAbilityTag(const FGameplayTag& AbilityTag)
 {
-	const FGameplayTag CooldownTag = PWTags::Ability::Spell::GetCooldownTag(AbilityTag);
+	const FGameplayTag CooldownTag = PWTags::Ability::Skill::GetCooldownTag(AbilityTag);
 	return CooldownTag.IsValid() ? ClearCooldownByTag(CooldownTag) : 0;
 }
 
@@ -121,7 +121,7 @@ bool UPWAbilitySystemComponent::AdjustCooldownForTag(const FGameplayTag& Cooldow
 
 bool UPWAbilitySystemComponent::AdjustCooldownForAbilityTag(const FGameplayTag& AbilityTag, float SecondsToReduce)
 {
-	const FGameplayTag CooldownTag = PWTags::Ability::Spell::GetCooldownTag(AbilityTag);
+	const FGameplayTag CooldownTag = PWTags::Ability::Skill::GetCooldownTag(AbilityTag);
 	return CooldownTag.IsValid() ? AdjustCooldownForTag(CooldownTag, SecondsToReduce) : 0;
 }
 

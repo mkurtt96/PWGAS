@@ -9,6 +9,10 @@
 #include "PWAttributeSet_Tagged.h"
 #include "PWAttributeSet_RegeneratingAttribute.generated.h"
 
+#define RegeneratingAttribute(Name)\
+UPROPERTY(VisibleAnywhere, BlueprintReadOnly) \
+TObjectPtr<class UPWAttributeSet_RegeneratingAttribute> Name;
+
 //put in .h outside class
 #define DeclareGameplayTag_Regenerating(Name) \
 namespace PWTags::Attributes { \

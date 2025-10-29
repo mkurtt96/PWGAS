@@ -11,23 +11,21 @@ void UPWGameplayAbility_Confirmed::ActivateAbility(const FGameplayAbilitySpecHan
 
 void UPWGameplayAbility_Confirmed::HandleTaggedAbilityInput_Implementation(const EPWInputEventType& InputType, const FGameplayTag& InputTag)
 {
-	if (InputType != EPWInputEventType::Pressed)
-		return;
-	
 	if (bAwaitingConfirm)
 	{
-		if (ConfirmInputTags.HasTagExact(InputTag))
+		if (MatchesBinding(ConfirmInputTags, InputType, InputTag))
 		{
 			bConfirmed = true;
 			bAwaitingConfirm = false;
 			OnConfirm(InputTag);
 			return;
 		}
-		if (CancelInputTags.HasTagExact(InputTag))
+
+		if (MatchesBinding(CancelInputTags, InputType, InputTag))
 		{
 			bAwaitingConfirm = false;
 			OnCancel(InputTag);
-			EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
+			EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, /*bReplicateEndAbility*/ true, /*bWasCancelled*/ true);
 			return;
 		}
 	}

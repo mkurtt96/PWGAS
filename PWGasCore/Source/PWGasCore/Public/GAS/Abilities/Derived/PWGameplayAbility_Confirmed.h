@@ -22,13 +22,13 @@ public:
 	 * This is to streamline the behavior creation. If your ability can be manipulated before it's confirmed, set bCanUseInputTagBindingsBeforeConfirmation to true.
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Ability|Confirm")
-	FGameplayTagContainer ConfirmInputTags;
+	TMap<EPWInputEventType, FGameplayTagContainer> ConfirmInputTags;
 
 	/**
 	 * These tags are used for initial cancellation. i.e precast ability cancellation during precast before the ability is actually casted. 
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Ability|Confirm")
-	FGameplayTagContainer CancelInputTags;
+	TMap<EPWInputEventType, FGameplayTagContainer> CancelInputTags;
 
 protected:
 	UPROPERTY(BlueprintReadOnly)

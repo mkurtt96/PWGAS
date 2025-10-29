@@ -10,7 +10,7 @@
  * 
  */
 UCLASS()
-class PWGASCORE_API UPWGameplayAbility_Channeling : public UPWGameplayAbility_Charged
+class PWGASCORE_API UPWGameplayAbility_Channeling : public UPWGameplayAbilityBase
 {
 	GENERATED_BODY()
 

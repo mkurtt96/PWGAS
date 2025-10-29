@@ -5,37 +5,34 @@
 
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/GameplayStaticsTypes.h"
-#include "Precast/Data/PWPrecastInterfaces.h"
-#include "Targeting/Interfaces/PWTargetingInterfaces.h"
-#include "Targeting/Data/PWTargetingTypes.h"
+#include "Precast/Data/PWPrecastTypes.h"
+#include "Targeting/Data/PWTargetingData.h"
+#include "PWGasCore/Public/Targeting/Types/PWTargetPolicyBase.h"
 
 UPWPrecastControllerComponent::UPWPrecastControllerComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
 }
 
-void UPWPrecastControllerComponent::StartPrecast(TSubclassOf<UObject> TargetingSourceClass, TSubclassOf<UObject> RangePolicyClass, TSubclassOf<UObject> VisualizerClass, float InPreviewRadius, FName InOriginSocket, FPWProjectileSimConfig InProjectileConfig)
+void UPWPrecastControllerComponent::StartPrecast(UPWTargetingSource* InTargetingSource, UPWRangePolicy* InRangePolicy, UPWTargetResolver* InTargetResolver, UPWPrecastVisualizer* InVisualizer, float InPreviewRadius, float InPreviewRange, FName InOriginSocket, FPWProjectileSimConfig InProjectileConfig)
 {
 	APlayerController* PC = GetPC();
 	if (!PC || !PC->IsLocalController()) return;
 
 	StopPrecast();
 
+	TargetingSource = InTargetingSource;
+	RangePolicy = InRangePolicy;
+	TargetResolver = InTargetResolver;
+	Visualizer = InVisualizer;
+	
 	PreviewRadius = InPreviewRadius;
+	PreviewRange = InPreviewRange;
 	OriginSocket = InOriginSocket;
 	ProjCfg = InProjectileConfig;
 
-	if (TargetingSourceClass)
-		TargetingObj = NewObject<UObject>(this, TargetingSourceClass);
-	if (RangePolicyClass)
-		RangeObj = NewObject<UObject>(this, RangePolicyClass);
-	if (VisualizerClass)
-		VisualObj = NewObject<UObject>(this, VisualizerClass);
-
-	if (IPWPrecastVisualizer* PrecastVisualizer = Cast<IPWPrecastVisualizer>(VisualObj))
-	{
-		PrecastVisualizer->Execute_Ensure(VisualObj, PC, PreviewRadius, OriginSocket);
-	}
+	if (Visualizer)
+		Visualizer->Ensure(PC, PreviewRadius, OriginSocket);
 
 	bRunning = true;
 	SetComponentTickEnabled(true);
@@ -44,11 +41,13 @@ void UPWPrecastControllerComponent::StartPrecast(TSubclassOf<UObject> TargetingS
 void UPWPrecastControllerComponent::StopPrecast()
 {
 	SetComponentTickEnabled(false);
-	if (IPWPrecastVisualizer* PrecastVisualizer = Cast<IPWPrecastVisualizer>(VisualObj))
-	{
-		PrecastVisualizer->Execute_Hide(VisualObj);
-	}
-	TargetingObj = RangeObj = VisualObj = nullptr;
+	Visualizer->Hide();
+	
+	TargetingSource = nullptr;
+	RangePolicy = nullptr;
+	TargetResolver = nullptr;
+	Visualizer = nullptr;
+	
 	Result = FPWTargetingResult();
 	bRunning = false;
 }
@@ -70,31 +69,20 @@ void UPWPrecastControllerComponent::TickComponent(float DeltaTime, ELevelTick Ti
 		return;
 	}
 
-	// 1) Targeting
-	if (const IPWTargetingSource* TargetingSource = Cast<IPWTargetingSource>(TargetingObj))
+	if (TargetingSource) TargetingSource->Sample(PC, Result);
+	if (RangePolicy) RangePolicy->Apply(GetPawn(), PreviewRange, Result);
+	TArray<AActor*> OutActors;
+	if (TargetResolver) TargetResolver->Resolve(PC, Result, OutActors);
+	if (Visualizer)
 	{
-		if (!TargetingSource->Execute_Sample(TargetingObj, PC, Result)) return;
-	}
-
-	// 2) Range clamp (optional)
-	if (const IPWRangePolicy* RangePolicy = Cast<IPWRangePolicy>(RangeObj))
-	{
-		RangePolicy->Execute_Apply(RangeObj, GetPawn(), PreviewRadius, Result);
-	}
-	
-	if (const IPWPrecastVisualizer* PrecastVisualizer = Cast<IPWPrecastVisualizer>(VisualObj))
-	{
-		// 3) Visual update payload
 		FPWPrecastVisualUpdate VisualUpdate;
 		VisualUpdate.Radius = PreviewRadius;
 		VisualUpdate.ImpactPoint = Result.Location;
 		VisualUpdate.ImpactNormal = FVector::UpVector;
 
-		// 3a) If visualizer wants projectile path, it’ll use PathPoints (we’ll compute it here)
+		// projectile path computation
 		BuildProjectileVisual(VisualUpdate);
-
-		// 4) Push
-		PrecastVisualizer->Execute_Update(VisualObj, VisualUpdate);
+		Visualizer->Update(VisualUpdate);
 	}
 }
 

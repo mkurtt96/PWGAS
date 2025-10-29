@@ -37,7 +37,9 @@ public:
 	virtual void RemoveAbility(const FGameplayTag& AbilityTag) const;
 	virtual void UpgradeAbility(const FGameplayTag& AbilityTag);
 	virtual void DowngradeAbility(const FGameplayTag& AbilityTag);
-	
+
+	void RemoveGrantedAbility(const FGameplayAbilitySpecHandle& Handle) const;
+
 	virtual bool HasAbility(const FGameplayTag& AbilityTag) const;
 	virtual int32 GetAbilityLevel(const FGameplayTag& AbilityTag) const;
 	virtual bool IsAbilityMaxLevel(const FGameplayTag& AbilityTag) const;

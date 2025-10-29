@@ -25,6 +25,7 @@ public class PWGASCoreEditor : ModuleRules
                 "GameplayTags",
                 "PWGasCore",
                 "GameplayTagsEditor", 
+                "InputCore",  
             }
         );
     }

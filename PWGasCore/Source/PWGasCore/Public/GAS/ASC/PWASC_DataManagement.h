@@ -37,10 +37,6 @@ public:
 	FGameplayAbilitySpec* GetFirstSpecWithTag(const FGameplayTag& TagToCheck,bool bMatchExact = true,bool bIncludeDynamicTags = true) const;
 	FGameplayAbilitySpec* GetFirstActiveSpecWithTag(const FGameplayTagContainer& TagsToCheck,bool bMatchExact = true,bool bIncludeDynamicTags = true) const;
 	FGameplayAbilitySpec* GetFirstActiveSpecWithTag(const FGameplayTag& TagsToCheck,bool bMatchExact = true,bool bIncludeDynamicTags = true) const;
-	
-	FGameplayAbilitySpec* GetPrecastingSpec() const;
-	
-
 
 private:
 	UPWAbilitySystemComponent& ASC;

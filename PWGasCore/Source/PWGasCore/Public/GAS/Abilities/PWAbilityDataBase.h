@@ -16,16 +16,12 @@ public:
 	FGameplayTag Tag = FGameplayTag();
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability")
-	FGameplayTag CooldownTag = FGameplayTag();
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability")
 	TSubclassOf<UGameplayAbility> AbilityClass = nullptr;
 	
 	UPROPERTY(BlueprintReadOnly)
 	int32 CurrentLevel = 0;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
 	int32 MaxLevel = 1;
-
 	
 	UPROPERTY(BlueprintReadOnly)
 	FGameplayTag InputTag = FGameplayTag();

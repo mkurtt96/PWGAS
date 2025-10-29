@@ -20,7 +20,7 @@ FGameplayTag FPWASC_DataManagement::GetAbilityFromSpec(const FGameplayAbilitySpe
 {
 	if (Spec.Ability)
 		for (auto Tag : Spec.Ability.Get()->GetAssetTags())
-			if (Tag.MatchesTag(PWTags::Ability::Root))
+			if (Tag.MatchesTag(PWTags::Ability::Skill::Root))
 				return Tag;
 
 	return FGameplayTag();
@@ -41,16 +41,6 @@ FGameplayAbilitySpec* FPWASC_DataManagement::GetSpecOfInput(const FGameplayTag& 
 	FScopedAbilityListLock ActiveScopeLock(ASC);
 	for (FGameplayAbilitySpec& Spec : ASC.GetActivatableAbilities())
 		if (Spec.GetDynamicSpecSourceTags().HasTag(InputTag))
-			return &Spec;
-
-	return nullptr;
-}
-
-FGameplayAbilitySpec* FPWASC_DataManagement::GetPrecastingSpec() const
-{
-	FScopedAbilityListLock ActiveScopeLock(ASC);
-	for (FGameplayAbilitySpec& Spec : ASC.GetActivatableAbilities())
-		if (Spec.GetDynamicSpecSourceTags().HasTag(PWTags::Ability::State::Precasting))
 			return &Spec;
 
 	return nullptr;
@@ -171,7 +161,7 @@ TArray<FGameplayTag> FPWASC_DataManagement::GetAbilitiesWithTags(const FGameplay
 		{
 			for (const FGameplayTag& Tag : Spec.Ability->GetAssetTags())
 			{
-				if (Tag.MatchesTag(PWTags::Ability::Root))
+				if (Tag.MatchesTag(PWTags::Ability::Skill::Root))
 				{
 					MatchingAbilities.Add(Tag);
 				}
@@ -206,7 +196,7 @@ FGameplayTag FPWASC_DataManagement::GetFirstAbilityWithTag(const FGameplayTagCon
 		{
 			for (const FGameplayTag& Tag : Spec.Ability->GetAssetTags())
 			{
-				if (Tag.MatchesTag(PWTags::Ability::Root))
+				if (Tag.MatchesTag(PWTags::Ability::Skill::Root))
 				{
 					return Tag;
 				}

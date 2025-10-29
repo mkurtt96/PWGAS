@@ -9,6 +9,9 @@
 #include "PWAttributeSet_Tagged.h"
 #include "PWAttributeSet_BasicAttribute.generated.h"
 
+#define BasicAttribute(Name)\
+UPROPERTY(VisibleAnywhere, BlueprintReadOnly) \
+TObjectPtr<class UPWAttributeSet_BasicAttribute> Name;
 
 //put in .h outside class
 #define DeclareGameplayTag_Basic(Name) \

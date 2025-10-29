@@ -9,7 +9,29 @@ namespace PWTags::Input
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GlobalCancel);
 }
 
+namespace PWTags::ASC
+{
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Root);
+}
+
+namespace PWTags::ASC::State
+{
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Root);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Casting);
+}
+
+namespace PWTags::MontageEvent
+{
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Root);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Trigger);
+}
+
 namespace PWTags::Ability
+{
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Root);
+}
+
+namespace PWTags::Ability::SetByCaller
 {
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Root);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Cooldown);
@@ -19,14 +41,12 @@ namespace PWTags::Ability::Activation
 {
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Root);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(OnGranted);
-	UE_DECLARE_GAMEPLAY_TAG_EXTERN(OnSpawn);
 }
 
 namespace PWTags::Ability::Deactivation
 {
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Root);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(OnRemoval);
-	UE_DECLARE_GAMEPLAY_TAG_EXTERN(OnDeath);
 }
 
 namespace PWTags::Ability::Control
@@ -35,14 +55,7 @@ namespace PWTags::Ability::Control
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Cancelable);
 }
 
-namespace PWTags::Ability::State
-{
-	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Root);
-	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Precasting);
-	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Casting);
-}
-
-namespace PWTags::Ability::Spell
+namespace PWTags::Ability::Skill
 {
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Root);
 

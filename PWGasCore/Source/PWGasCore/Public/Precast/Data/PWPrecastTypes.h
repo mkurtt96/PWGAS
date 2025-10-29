@@ -1,14 +1,36 @@
-﻿#pragma once
+﻿// copyright mkurtt96
 
+#pragma once
+
+#include "CoreMinimal.h"
+#include "PWGasCore/Public/Targeting/Types/PWTargetPolicyBase.h"
+#include "UObject/Interface.h"
 #include "PWPrecastTypes.generated.h"
 
-USTRUCT(BlueprintType)
-struct FPWPrecastVisualUpdate
+// UINTERFACE(BlueprintType)
+// class UPWPrecastVisualizer : public UInterface { GENERATED_BODY() };
+// class IPWPrecastVisualizer
+// {
+// 	GENERATED_BODY()
+// public:
+// 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable) void Ensure(class APlayerController* PC, float PreviewRadius, FName OriginSocket);
+// 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable) void Update(const FPWPrecastVisualUpdate& Data);
+// 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable) void Hide();
+// };
+
+UCLASS(Abstract, Blueprintable, EditInlineNew, DefaultToInstanced)
+class PWGASCORE_API UPWPrecastVisualizer : public UPWTargetPolicyBase
 {
 	GENERATED_BODY()
-	UPROPERTY(BlueprintReadWrite) TArray<FVector> PathPoints;
-	UPROPERTY(BlueprintReadWrite) FVector ImpactPoint = FVector::ZeroVector;
-	UPROPERTY(BlueprintReadWrite) FVector ImpactNormal = FVector::UpVector;
-	UPROPERTY(BlueprintReadWrite) float Radius = 0.f;
-	UPROPERTY(BlueprintReadWrite) bool bValid = true;
+
+public:
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	void Ensure(class APlayerController* PC, float PreviewRadius, FName OriginSocket);
+	virtual void Ensure_Implementation(class APlayerController* PC, float PreviewRadius, FName OriginSocket);
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	void Update(const FPWPrecastVisualUpdate& Data);
+	virtual void Update_Implementation(const FPWPrecastVisualUpdate& Data);
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	void Hide();
+	virtual void Hide_Implementation();
 };

@@ -67,6 +67,13 @@ void FPWASC_AbilityLifecycle::DowngradeAbility(const FGameplayTag& AbilityTag)
 	ASC.MarkAbilitySpecDirty(*Spec);
 }
 
+void FPWASC_AbilityLifecycle::RemoveGrantedAbility(const FGameplayAbilitySpecHandle& Handle) const
+{
+	ASC.CancelAbilityHandle(Handle);
+	ASC.ClearAbility(Handle);
+	ASC.MarkAbilitySpecDirty(*ASC.FindAbilitySpecFromHandle(Handle));
+}
+
 bool FPWASC_AbilityLifecycle::HasAbility(const FGameplayTag& AbilityTag) const
 {
 	return ASC.Data().GetSpecOfAbility(AbilityTag) ? true : false;

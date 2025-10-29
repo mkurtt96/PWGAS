@@ -28,13 +28,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category="GASCore|Flow", meta=(DefaultToSelf="Ability"))
 	static void SetAbilityCancelable(UGameplayAbility* Ability, bool bIsCancelable);
 
-	UFUNCTION(BlueprintCallable, Category="GASCore|Flow", meta=(DefaultToSelf="Ability"))
+	UFUNCTION(BlueprintPure, Category="GASCore|Flow", meta=(DefaultToSelf="Ability"))
 	static FGameplayTag GetAbilityCooldownTag(const FGameplayTag& AbilityTag);
 
-	UFUNCTION(BlueprintCallable, Category="GASCore|Flow", meta=(DefaultToSelf="Ability"))
+	UFUNCTION(BlueprintPure, Category="GASCore|Flow", meta=(DefaultToSelf="Ability"))
 	static FGameplayTag GetAbilityTagWithSuffix(const FGameplayTag& AbilityTag, const FString& Suffix);
 
-	UFUNCTION(BlueprintCallable, Category="GASCore|Flow", meta=(DefaultToSelf="Ability"))
+	UFUNCTION(BlueprintPure, Category="GASCore|Flow", meta=(DefaultToSelf="Ability"))
 	static FGameplayTag FindTagWithSuffix(const FGameplayTagContainer& Container, const FString& Suffix);
 
 private:
