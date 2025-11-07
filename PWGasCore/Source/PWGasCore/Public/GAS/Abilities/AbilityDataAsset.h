@@ -1,0 +1,21 @@
+﻿// copyright mkurtt96
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "PWAbilityInfo.h"
+#include "Engine/DataAsset.h"
+#include "AbilityDataAsset.generated.h"
+
+/**
+ * 
+ */
+UCLASS(BlueprintType)
+class PWGASCORE_API UAbilityDataAsset : public UDataAsset
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	FPWAbilityInfo Ability;
+};

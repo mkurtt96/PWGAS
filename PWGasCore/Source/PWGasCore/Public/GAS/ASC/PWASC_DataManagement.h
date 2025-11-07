@@ -3,16 +3,18 @@
 #pragma once
 #include "GameplayTagContainer.h"
 
+struct FGameplayAbilitySpecHandle;
 struct FActiveGameplayEffect;
 class UPWAbilitySystemComponent;
 struct FGameplayAbilitySpec;
 
-class FPWASC_DataManagement
+class PWGASCORE_API FPWASC_DataManagement
 {
 public:
 	friend class UPWAbilitySystemComponent;
 	explicit FPWASC_DataManagement(UPWAbilitySystemComponent& InASC) : ASC(InASC){}
 	virtual ~FPWASC_DataManagement() = default;
+	UPWAbilitySystemComponent& ASC;
 
 	static FGameplayTag GetInputFromSpec(const FGameplayAbilitySpec& Spec);
 	static FGameplayTag GetAbilityFromSpec(const FGameplayAbilitySpec& Spec);
@@ -25,8 +27,8 @@ public:
 
 	bool DoesAbilityHaveTag(const FGameplayTag& AbilityTag, const FGameplayTagContainer& TagsToCheck, bool bMatchExact = true, bool bIncludeDynamicTags = true) const;
 	bool DoesAbilityHaveTag(const FGameplayTag& AbilityTag, const FGameplayTag& TagToCheck, bool bMatchExact = true, bool bIncludeDynamicTags = true) const;
-	static bool DoesAbilityHaveTag(const FGameplayAbilitySpec* AbilitySpec, const FGameplayTagContainer& TagsToCheck, bool bMatchExact = true, bool bIncludeDynamicTags = true);
-	static bool DoesAbilityHaveTag(const FGameplayAbilitySpec* AbilitySpec, const FGameplayTag& TagToCheck, bool bMatchExact = true, bool bIncludeDynamicTags = true);
+	bool DoesAbilityHaveTag(const FGameplayAbilitySpecHandle& AbilitySpecHandle, const FGameplayTagContainer& TagsToCheck, bool bMatchExact = true, bool bIncludeDynamicTags = true) const;
+	bool DoesAbilityHaveTag(const FGameplayAbilitySpecHandle& AbilitySpecHandle, const FGameplayTag& TagToCheck, bool bMatchExact = true, bool bIncludeDynamicTags = true) const;
 	TArray<FGameplayTag> GetAbilitiesWithTags(const FGameplayTagContainer& TagsToCheck, bool bMatchExact = true, bool bIncludeDynamicTags = true) const;
 	TArray<FGameplayTag> GetAbilitiesWithTags(const FGameplayTag& TagToCheck, bool bMatchExact = true, bool bIncludeDynamicTags = true) const;
 	FGameplayTag GetFirstAbilityWithTag(const FGameplayTagContainer& TagsToCheck, bool bMatchExact = true, bool bIncludeDynamicTags = true) const;
@@ -39,5 +41,4 @@ public:
 	FGameplayAbilitySpec* GetFirstActiveSpecWithTag(const FGameplayTag& TagsToCheck,bool bMatchExact = true,bool bIncludeDynamicTags = true) const;
 
 private:
-	UPWAbilitySystemComponent& ASC;
 };

@@ -7,14 +7,13 @@
 #include "GameplayTagsManager.h"
 #include "GameplayTagsSettings.h"
 #include "GameFramework/PlayerState.h"
+#include "GAS/Abilities/Modules/ActionModules/PWAbilityInstantEffectModule.h"
 #include "GAS/Abilities/Modules/ActionModules/PWAbilityMultiActorModule.h"
 #include "GAS/Abilities/Modules/ActionModules/PWActionModule.h"
 #include "GAS/Abilities/Modules/ControlModules/PWAbilityTargetingModule.h"
 #include "GAS/Abilities/Modules/DataModules/PWAbilityRadiusModule.h"
 #include "PWGasCore/Public/GAS/Abilities/Modules/PWAbilityModule.h"
-#include "GAS/ASC/PWAbilitySystemComponent.h"
 #include "GAS/ASC/PWASC_InputBinding.h"
-#include "GAS/Data/FPWAbilityInputListener.h"
 #include "GAS/Tags/GASCoreTags.h"
 #include "Targeting/Data/PWTargetingData.h"
 #include "VisualAndAudio/PWAnimSetProvider.h"
@@ -112,15 +111,16 @@ float UPWGameplayAbilityBase::GetCooldown(int32 Level) const
 	return Cooldown.GetValueAtLevel(Level);
 }
 
-void UPWGameplayAbilityBase::GetAnimMontageFromActor(UAnimMontage*& OutMontage, float& OutAnimRate) const
+void UPWGameplayAbilityBase::GetAnimMontageFromActor(UAnimMontage*& OutMontage, float& OutAnimRate, int Index) const
 {
 	const AActor* AvatarActor = GetAvatarActorFromActorInfo();
-	if (!AvatarActor || !AnimationTag.IsValid())
+	if (!AvatarActor || !AnimationTags.IsValidIndex(Index) || !AnimationTags[Index].IsValid())
 		return;
 
 	if (AvatarActor->GetClass()->ImplementsInterface(UPWAnimSetProvider::StaticClass()))
 	{
-		OutMontage = IPWAnimSetProvider::Execute_GetMontageForTag(AvatarActor, AnimationTag, OutAnimRate);
+		OutMontage = IPWAnimSetProvider::Execute_GetMontageForTag(AvatarActor, AnimationTags[Index], OutAnimRate);
+		return;
 	}
 
 	UE_LOG(LogTemp, Warning, TEXT("AvatarActor: %s does not use the IPWAnimSetProvider, See UPWGameplayAbilityBase::GetAnimationMontageFromActor"), *AvatarActor->GetName())
@@ -170,59 +170,13 @@ void UPWGameplayAbilityBase::EndAbility(const FGameplayAbilitySpecHandle Handle,
 	});
 }
 
-void UPWGameplayAbilityBase::HandleTaggedAbilityInput_Implementation(const EPWInputEventType& InputType, const FGameplayTag& InputTag)
-{
-	if (const FGameplayTagContainer* BoundTags = InputTagBindings.Find(InputType))
-	{
-		if (BoundTags->HasTagExact(InputTag))
-		{
-			switch (InputType)
-			{
-			case EPWInputEventType::Pressed:
-				OnInputPressed(InputTag);
-				break;
-			case EPWInputEventType::Released:
-				OnInputReleased(InputTag);
-				break;
-			}
-		}
-	}
-}
-
-void UPWGameplayAbilityBase::GetHandledInputTags_Implementation(TArray<FGameplayTag>& OutTags) const
-{
-}
-
-void UPWGameplayAbilityBase::RegisterAbilityInputListener_Implementation(const TArray<FPWAbilityInputListener>& Listeners, const bool bExclusive)
-{
-	if (const UPWAbilitySystemComponent* ASC = Cast<UPWAbilitySystemComponent>(GetAbilitySystemComponentFromActorInfo()))
-	{
-		ASC->Input().RegisterAbilityInputListener(GetCurrentAbilitySpecHandle(), Listeners, bExclusive);
-	}
-}
-
-void UPWGameplayAbilityBase::UnregisterAbilityInputListener_Implementation()
-{
-	if (const UPWAbilitySystemComponent* ASC = Cast<UPWAbilitySystemComponent>(GetAbilitySystemComponentFromActorInfo()))
-	{
-		ASC->Input().UnregisterAbilityInputListener(GetCurrentAbilitySpecHandle());
-	}
-}
-
-bool UPWGameplayAbilityBase::MatchesBinding(const TMap<EPWInputEventType, FGameplayTagContainer>& Map, EPWInputEventType Type, const FGameplayTag& Tag)
-{
-	if (const FGameplayTagContainer* C = Map.Find(Type))
-		return C->HasTagExact(Tag);
-	return false;
-}
-
 void UPWGameplayAbilityBase::EnsureRequiredDataModules()
 {
-	if (!ActionModule)
-		return;
-
 	TArray<TSubclassOf<UPWDataModule>> Required;
-	ActionModule->GetRequiredDataModules(Required);
+	ForEachModule([&Required](UPWAbilityModule* Module)
+	{
+		Module->GetRequiredDataModules(Required);
+	});
 
 	for (TSubclassOf<UPWDataModule> DataClass : Required)
 	{
@@ -247,7 +201,7 @@ void UPWGameplayAbilityBase::EnsureRequiredDataModules()
 	}
 }
 
-void UPWGameplayAbilityBase::ForEachModule(TFunctionRef<void(UPWAbilityModule*)> Callback) const
+void UPWGameplayAbilityBase::ForEachModule(TFunctionRef<void(UPWAbilityModule*)> Callback)
 {
 	if (ActionModule)
 		Callback(ActionModule);
@@ -259,6 +213,11 @@ void UPWGameplayAbilityBase::ForEachModule(TFunctionRef<void(UPWAbilityModule*)>
 	for (UPWControlModule* M : ControlModules)
 		if (M)
 			Callback(M);
+}
+
+UPWAbilityInstantEffectModule* UPWGameplayAbilityBase::GetInstantEffectModule() const
+{
+	return GetActionModule<UPWAbilityInstantEffectModule>();
 }
 
 UPWAbilityActorModule* UPWGameplayAbilityBase::GetActorModule() const

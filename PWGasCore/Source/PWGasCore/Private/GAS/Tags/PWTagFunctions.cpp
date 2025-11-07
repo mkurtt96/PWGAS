@@ -6,34 +6,6 @@
 #include "AbilitySystemComponent.h"
 #include "GAS/Tags/GASCoreTags.h"
 
-FGameplayTag UPWTagFunctions::GetCancelableTag()
-{
-	return PWTags::Ability::Control::Cancelable;
-}
-
-bool UPWTagFunctions::IsAbilityCurrentlyCancelable(UGameplayAbility* Ability)
-{
-	UAbilitySystemComponent* ASC = nullptr;
-	if (FGameplayAbilitySpec* Spec = GetCurrentSpec(Ability, ASC))
-	{
-		return Spec->GetDynamicSpecSourceTags().HasTag(GetCancelableTag());
-	}
-	return false;
-}
-
-void UPWTagFunctions::SetAbilityCancelable(UGameplayAbility* Ability, bool bIsCancelable)
-{
-	UAbilitySystemComponent* ASC;
-	if (FGameplayAbilitySpec* Spec = GetCurrentSpec(Ability, ASC))
-	{
-		const FGameplayTag Tag = GetCancelableTag();
-		if (bIsCancelable) { Spec->GetDynamicSpecSourceTags().AddTag(Tag); }
-		else { Spec->GetDynamicSpecSourceTags().RemoveTag(Tag); }
-
-		if (ASC) { ASC->MarkAbilitySpecDirty(*Spec); } // ensure replication/update
-	}
-}
-
 FGameplayTag UPWTagFunctions::GetAbilityCooldownTag(const FGameplayTag& AbilityTag)
 {
 	if (AbilityTag.MatchesTag(PWTags::Ability::Skill::Root))

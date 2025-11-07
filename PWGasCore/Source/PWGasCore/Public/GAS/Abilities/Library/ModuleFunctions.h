@@ -6,6 +6,8 @@
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "ModuleFunctions.generated.h"
 
+class UProjectileSpellParamsExtension;
+class UActorSpellParamsExtension;
 class UEffectSpellParamsExtension;
 class USpellParams;
 /**
@@ -19,6 +21,10 @@ class PWGASCORE_API UModuleFunctions : public UBlueprintFunctionLibrary
 public:
 	UFUNCTION(BlueprintPure, Category="GASCore|SpellParams")
 	static UEffectSpellParamsExtension* GetEffectParams(const USpellParams* Params);
+	UFUNCTION(BlueprintPure, Category="GASCore|SpellParams")
+	static UProjectileSpellParamsExtension* GetProjectileParams(const USpellParams* Params);
+	UFUNCTION(BlueprintPure, Category="GASCore|SpellParams")
+	static UActorSpellParamsExtension* GetActorParams(const USpellParams* Params);
 	UFUNCTION(BlueprintPure, BlueprintPure, Category="Accessors")
 	static float GetRange(const USpellParams* Params);
 	UFUNCTION(BlueprintPure, BlueprintPure, Category="Accessors")

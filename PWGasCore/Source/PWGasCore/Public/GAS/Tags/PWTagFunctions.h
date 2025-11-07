@@ -19,15 +19,6 @@ class PWGASCORE_API UPWTagFunctions : public UBlueprintFunctionLibrary
 	GENERATED_BODY()
 
 public:
-	UFUNCTION(BlueprintPure, Category="GASCore|Tags", meta=(DisplayName="Get Cancelable Tag"))
-	static FGameplayTag GetCancelableTag();
-
-	UFUNCTION(BlueprintPure, Category="GASCore|Flow", meta=(DefaultToSelf="Ability"))
-	static bool IsAbilityCurrentlyCancelable(UGameplayAbility* Ability);
-
-	UFUNCTION(BlueprintCallable, Category="GASCore|Flow", meta=(DefaultToSelf="Ability"))
-	static void SetAbilityCancelable(UGameplayAbility* Ability, bool bIsCancelable);
-
 	UFUNCTION(BlueprintPure, Category="GASCore|Flow", meta=(DefaultToSelf="Ability"))
 	static FGameplayTag GetAbilityCooldownTag(const FGameplayTag& AbilityTag);
 

@@ -1,0 +1,42 @@
+﻿// copyright mkurtt96
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Abilities/Tasks/AbilityTask.h"
+#include "GAS/Data/GASCoreEnums.h"
+#include "AbilityTask_WaitInputEvent.generated.h"
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FPWInputEventDelegate, const FGameplayTag&, InputTag);
+
+/**
+ * Waits for a simple gameplay input event (Pressed/Released) with a specific input tag.
+ * The event is sent from the AbilitySystemComponent via SendInputEvent.
+ */
+UCLASS()
+class PWGASCORE_API UAbilityTask_WaitInputEvent : public UAbilityTask
+{
+	GENERATED_BODY()
+
+public:
+	/** Called when the matching input event is received */
+	UPROPERTY(BlueprintAssignable)
+	FPWInputEventDelegate EventReceived;
+
+	/** Waits for an input event with given tag and type (Pressed or Released). */
+	UFUNCTION(BlueprintCallable, Category="Ability|Tasks", meta=(GameplayTagFilter = "Input", DisplayName="Wait Input Event", HidePin="OwningAbility", DefaultToSelf="OwningAbility", BlueprintInternalUseOnly="true"))
+	static UAbilityTask_WaitInputEvent* WaitInputEvent(UGameplayAbility* OwningAbility, FGameplayTag InputTag, EInputEventType EventType = EInputEventType::Pressed);
+
+	virtual void Activate() override;
+
+protected:
+	void OnGameplayEventReceived(const FGameplayEventData* Payload);
+
+	/** Tag to listen for (e.g. Input.Mouse.Left) */
+	UPROPERTY()
+	FGameplayTag WatchedInputTag;
+
+	/** Whether we’re waiting for Pressed or Released */
+	UPROPERTY()
+	EInputEventType WatchedEventType = EInputEventType::Pressed;
+};

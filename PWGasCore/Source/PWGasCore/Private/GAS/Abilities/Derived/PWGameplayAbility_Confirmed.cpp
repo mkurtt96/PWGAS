@@ -2,36 +2,49 @@
 
 #include "GAS/Abilities/Derived/PWGameplayAbility_Confirmed.h"
 
+#include "Abilities/Tasks/AbilityTask.h"
+#include "GAS/AbilityTasks/AbilityTask_WaitInputEvent.h"
+#include "GAS/Tags/GASCoreTags.h"
+
 void UPWGameplayAbility_Confirmed::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
-	bAwaitingConfirm = true;
+	SetAwaitingConfirmation(true);
 	bConfirmed = false;
+
+	for (const TPair<EInputEventType, FGameplayTagContainer>& ConfirmInput : ConfirmInputs)
+	{
+		const EInputEventType EventType = ConfirmInput.Key;
+		const FGameplayTagContainer& InputTags = ConfirmInput.Value;
+
+		for (const FGameplayTag& InputTag : InputTags)
+		{
+			if (!InputTag.IsValid())
+				continue;
+
+			UAbilityTask_WaitInputEvent* WaitTask = UAbilityTask_WaitInputEvent::WaitInputEvent(this, InputTag, EventType);
+			if (!WaitTask)
+				continue;
+
+			WaitTask->EventReceived.AddDynamic(this, &UPWGameplayAbility_Confirmed::HandleConfirmInput);
+			WaitTask->ReadyForActivation();
+		}
+	}
 }
 
-void UPWGameplayAbility_Confirmed::HandleTaggedAbilityInput_Implementation(const EPWInputEventType& InputType, const FGameplayTag& InputTag)
+void UPWGameplayAbility_Confirmed::SetAwaitingConfirmation(bool bCond)
 {
-	if (bAwaitingConfirm)
-	{
-		if (MatchesBinding(ConfirmInputTags, InputType, InputTag))
-		{
-			bConfirmed = true;
-			bAwaitingConfirm = false;
-			OnConfirm(InputTag);
-			return;
-		}
+	bAwaitingConfirmation = bCond;
+	if (bAwaitingConfirmation)
+		GetCurrentAbilitySpec()->GetDynamicSpecSourceTags().AddTag(PWTags::Ability::State::AwaitingConfirmation);
+	else
+		GetCurrentAbilitySpec()->GetDynamicSpecSourceTags().RemoveTag(PWTags::Ability::State::AwaitingConfirmation);
+}
 
-		if (MatchesBinding(CancelInputTags, InputType, InputTag))
-		{
-			bAwaitingConfirm = false;
-			OnCancel(InputTag);
-			EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, /*bReplicateEndAbility*/ true, /*bWasCancelled*/ true);
-			return;
-		}
-	}
+void UPWGameplayAbility_Confirmed::HandleConfirmInput(const FGameplayTag& InputTag)
+{
+	bConfirmed = true;
+	SetAwaitingConfirmation(false);
 
-	if (bConfirmed || bCanUseInputTagBindingsBeforeConfirmation)
-	{
-		Super::HandleTaggedAbilityInput_Implementation(InputType, InputTag);
-	}
+	OnConfirmed(InputTag);
 }

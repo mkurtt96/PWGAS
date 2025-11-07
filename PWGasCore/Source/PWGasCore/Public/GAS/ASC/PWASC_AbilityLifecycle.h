@@ -13,12 +13,13 @@ DECLARE_DELEGATE_OneParam(FForEachAbility, const FGameplayAbilitySpec&);
 
 
 
-class FPWASC_AbilityLifecycle
+class PWGASCORE_API FPWASC_AbilityLifecycle
 {
 public:
 	friend class UPWAbilitySystemComponent;
 	explicit FPWASC_AbilityLifecycle(UPWAbilitySystemComponent& InASC) : ASC(InASC) {}
 	virtual ~FPWASC_AbilityLifecycle() = default;
+	UPWAbilitySystemComponent& ASC;
 	
 	FAbilitiesEvent AbilitiesUpdated; //server and client 
 	FAbilityEvent AbilityAdded; //server only
@@ -33,7 +34,7 @@ public:
 	 * @param AbilityTags 
 	 */
 	virtual void AddAbilities(const FGameplayTagContainer& AbilityTags) const;
-	virtual void AddAbility(const FGameplayTag& AbilityTag, const bool AutoEquip = true) const;
+	virtual void AddAbility(const FGameplayTag& AbilityTag, const FGameplayTag& InputTag = FGameplayTag()) const;
 	virtual void RemoveAbility(const FGameplayTag& AbilityTag) const;
 	virtual void UpgradeAbility(const FGameplayTag& AbilityTag);
 	virtual void DowngradeAbility(const FGameplayTag& AbilityTag);
@@ -52,7 +53,4 @@ public:
 	virtual bool ApplyDeactivationPolicies(const FGameplayAbilitySpecHandle& SpecHandle, const FGameplayTag& EventTag) const;
 	virtual bool ApplyDeactivationPolicies(const FGameplayAbilitySpec& AbilitySpec, const FGameplayTag& EventTag) const;
 	virtual void ApplyDeactivationPolicies(const FGameplayTag& EventTag) const;
-
-private:
-	UPWAbilitySystemComponent& ASC;
 };

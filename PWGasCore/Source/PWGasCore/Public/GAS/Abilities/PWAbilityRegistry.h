@@ -7,7 +7,8 @@
 #include "Engine/DataAsset.h"
 #include "PWAbilityRegistry.generated.h"
 
-struct FPWAbilityDataBase;
+class UAbilityDataAsset;
+struct FPWAbilityInfo;
 
 UCLASS()
 class PWGASCORE_API UPWAbilityRegistry : public UPrimaryDataAsset
@@ -16,8 +17,8 @@ class PWGASCORE_API UPWAbilityRegistry : public UPrimaryDataAsset
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	TArray<FPWAbilityDataBase> Abilities;
+	TArray<UAbilityDataAsset*> Abilities;
 	
 	UFUNCTION(BlueprintCallable)
-	FPWAbilityDataBase GetAbilityByTag(const FGameplayTag& AbilityTag);
+	FPWAbilityInfo GetAbilityByTag(const FGameplayTag& AbilityTag);
 };

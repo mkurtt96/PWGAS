@@ -6,6 +6,12 @@ namespace PWTags::Input // The tag "Input" is used to distinguish ability activa
 	UE_DEFINE_GAMEPLAY_TAG(GlobalCancel, "Input.Cancel");
 }
 
+namespace PWTags::Event
+{
+	UE_DEFINE_GAMEPLAY_TAG(Root, "Event");
+	UE_DEFINE_GAMEPLAY_TAG(Input, "Event.Input");
+}
+
 namespace PWTags::ASC
 {
 	UE_DEFINE_GAMEPLAY_TAG(Root, "ASC");
@@ -46,20 +52,14 @@ namespace PWTags::Ability::Deactivation
 	UE_DEFINE_GAMEPLAY_TAG(OnRemoval, "Ability.Deactivation.OnRemoval");
 }
 
-namespace PWTags::Ability::Control
-{
-	UE_DEFINE_GAMEPLAY_TAG(Root, "Ability.Control");
-	UE_DEFINE_GAMEPLAY_TAG(Cancelable, "Ability.Control.Cancelable"); // Used with Input.Cancel, this must be assign to a GameplayAbility during it's cancelable state. See FPWASC_InputBinding.
-}
-
 namespace PWTags::Ability::State
 {
 	UE_DEFINE_GAMEPLAY_TAG(Root, "Ability.State");
-	UE_DEFINE_GAMEPLAY_TAG(Casting, "Ability.State.Casting");
+	UE_DEFINE_GAMEPLAY_TAG(AwaitingConfirmation, "Ability.State.AwaitingConfirmation");
 }
 
-namespace PWTags::Ability::Skill // The tag "Ability.Spell" is used to distinguish abilities. Each ability should be assigned a unique tag "Ability.Spell.xxxxx" and this input tag can be used to activate the ability.
-								 // Each ability must have a cooldown tag as "Ability.Spell.xxxxx.Cooldown" to handle it's cooldown.
+namespace PWTags::Ability::Skill // The tag "Ability.Spell" is used to distinguish abilities. Each ability should be assigned a unique tag "Ability.Spell.*" and this input tag can be used to activate the ability.
+								 // Each ability must have a cooldown tag as "Ability.Spell.*.Cooldown" to handle it's cooldown.
 								 // IMPORTANT: These 2 tags can be generated and assigned in GA by the CallInEditor function in blueprint details
 {								 // See FPWASC_InputBinding.
 	UE_DEFINE_GAMEPLAY_TAG(Root, "Ability.Skill");

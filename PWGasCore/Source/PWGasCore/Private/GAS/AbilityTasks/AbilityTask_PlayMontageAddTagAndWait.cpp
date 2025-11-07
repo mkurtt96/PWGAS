@@ -193,7 +193,6 @@ void UAbilityTask_PlayMontageAddTagAndWait::OnDestroy(const bool AbilityEnded)
 			StopPlayingMontage();
 		}
 	}
-
 	Super::OnDestroy(AbilityEnded);
 }
 
@@ -255,4 +254,15 @@ FString UAbilityTask_PlayMontageAddTagAndWait::GetDebugString() const
 	}
 
 	return FString::Printf(TEXT("PlayMontageAndWait. MontageToPlay: %s  (Currently Playing): %s"), *GetNameSafe(MontageToPlay), *GetNameSafe(PlayingMontage));
+}
+
+void UAbilityTask_PlayMontageAddTagAndWait::StopMontage()
+{
+	if (ShouldBroadcastAbilityTaskDelegates())
+	{
+		AbilitySystemComponent.Get()->RemoveLooseGameplayTags(TagsToAdd);
+		OnCancelled.Broadcast();
+	}
+
+	ExternalCancel();
 }

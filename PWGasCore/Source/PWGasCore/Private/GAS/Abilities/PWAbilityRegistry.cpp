@@ -3,16 +3,17 @@
 
 #include "GAS/Abilities/PWAbilityRegistry.h"
 
-#include "GAS/Abilities/PWAbilityDataBase.h"
+#include "GAS/Abilities/AbilityDataAsset.h"
+#include "GAS/Abilities/PWAbilityInfo.h"
 
-FPWAbilityDataBase UPWAbilityRegistry::GetAbilityByTag(const FGameplayTag& AbilityTag)
+FPWAbilityInfo UPWAbilityRegistry::GetAbilityByTag(const FGameplayTag& AbilityTag)
 {
-	for (const auto Ability : Abilities)
+	for (const auto AbilityDA : Abilities)
 	{
-		if (Ability.Tag.MatchesTagExact(AbilityTag))
+		if (AbilityDA->Ability.Tag.MatchesTagExact(AbilityTag))
 		{
-			return Ability;
+			return AbilityDA->Ability;
 		}
 	}
-	return FPWAbilityDataBase();
+	return FPWAbilityInfo();
 }

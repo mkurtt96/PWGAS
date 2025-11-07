@@ -44,8 +44,10 @@ void UPWGameplayAbility_Charged::StopCharging(bool bWasCanceled)
 
 	if (bWasCanceled)
 		OnChargeCanceled();
+	else
+		OnChargeComplete();
 
-	EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), true, bWasCanceled);
+	//EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), true, bWasCanceled);
 }
 
 float UPWGameplayAbility_Charged::GetChargePercentage() const
@@ -68,6 +70,5 @@ void UPWGameplayAbility_Charged::HandleChargeTick()
 	if (CurrentChargeTime >= ChargeDuration)
 	{
 		StopCharging(false);
-		OnChargeComplete();
 	}
 }

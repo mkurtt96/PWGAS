@@ -4,7 +4,7 @@
 #include "GAS/ASC/PWASC_AbilityLifecycle.h"
 
 #include "GameplayAbilitySpec.h"
-#include "GAS/Abilities/PWAbilityDataBase.h"
+#include "GAS/Abilities/PWAbilityInfo.h"
 #include "GAS/Abilities/PWAbilityRegistry.h"
 #include "GAS/ASC/PWAbilitySystemComponent.h"
 #include "GAS/ASC/PWASC_DataManagement.h"
@@ -20,12 +20,17 @@ void FPWASC_AbilityLifecycle::AddAbilities(const FGameplayTagContainer& AbilityT
 	AbilitiesUpdated.Broadcast();
 }
 
-void FPWASC_AbilityLifecycle::AddAbility(const FGameplayTag& AbilityTag, const bool AutoEquip) const
+void FPWASC_AbilityLifecycle::AddAbility(const FGameplayTag& AbilityTag, const FGameplayTag& InputTag) const
 {
-	const FPWAbilityDataBase AbilityData = UPWGASData::GetAbilityRegistry(ASC.GetWorld())->GetAbilityByTag(AbilityTag);
-	FGameplayAbilitySpec Spec = FGameplayAbilitySpec(AbilityData.AbilityClass, 1);
+	const FPWAbilityInfo AbilityData = UPWGASData::GetAbilityRegistry(ASC.GetWorld())->GetAbilityByTag(AbilityTag);
+	if (!AbilityData.IsValid())
+		UE_LOG(LogTemp, Warning, TEXT("%s >> AbilityData is invalid!!"), *FString(__FUNCTION__));
 
+	FGameplayAbilitySpec Spec = FGameplayAbilitySpec(AbilityData.AbilityClass, 1);
 	FGameplayAbilitySpecHandle SpecHandle = ASC.GiveAbility(Spec);
+
+	if (InputTag.IsValid())
+		ASC.Input().EquipAbility(AbilityTag, InputTag);
 
 	bool Activated = ApplyActivationPolicies(SpecHandle, PWTags::Ability::Activation::OnGranted);
 
@@ -41,7 +46,7 @@ void FPWASC_AbilityLifecycle::RemoveAbility(const FGameplayTag& AbilityTag) cons
 		AbilityEnded.Broadcast(AbilityTag);
 
 	ASC.ClearAbility(Spec->Handle);
-	
+
 	AbilityRemoved.Broadcast(AbilityTag);
 }
 
@@ -88,7 +93,7 @@ int32 FPWASC_AbilityLifecycle::GetAbilityLevel(const FGameplayTag& AbilityTag) c
 
 bool FPWASC_AbilityLifecycle::IsAbilityMaxLevel(const FGameplayTag& AbilityTag) const
 {
-	const FPWAbilityDataBase AbilityData = UPWGASData::GetAbilityRegistry(ASC.GetWorld())->GetAbilityByTag(AbilityTag);
+	const FPWAbilityInfo AbilityData = UPWGASData::GetAbilityRegistry(ASC.GetWorld())->GetAbilityByTag(AbilityTag);
 	const FGameplayAbilitySpec* Spec = ASC.Data().GetSpecOfAbility(AbilityTag);
 	if (!Spec) return false;
 	if (Spec->Level == AbilityData.MaxLevel) return true;
@@ -106,7 +111,7 @@ void FPWASC_AbilityLifecycle::ForEachAbility(const FForEachAbility& Delegate) co
 bool FPWASC_AbilityLifecycle::ApplyActivationPolicies(const FGameplayAbilitySpecHandle& SpecHandle, const FGameplayTag& EventTag) const
 {
 	FGameplayAbilitySpec* AbilitySpec = ASC.FindAbilitySpecFromHandle(SpecHandle);
-	if (AbilitySpec->Ability && AbilitySpec->Ability->GetAssetTags().HasAnyExact(EventTag.GetSingleTagContainer()))
+	if (AbilitySpec && AbilitySpec->Ability && AbilitySpec->Ability->GetAssetTags().HasAnyExact(EventTag.GetSingleTagContainer()))
 	{
 		if (!AbilitySpec->IsActive())
 		{

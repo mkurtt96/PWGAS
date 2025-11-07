@@ -85,5 +85,6 @@ bool UPWAbilityTargetingModule::ComputeTarget(FPWTargetingResult& Out)
 
 void UPWAbilityTargetingModule::GetRequiredDataModules_Implementation(TArray<TSubclassOf<UPWDataModule>>& OutRequiredModules)
 {
-	TargetResolver->GetRequiredDataModules(OutRequiredModules);
+	if (TargetResolver)
+		TargetResolver->GetRequiredDataModules(OutRequiredModules);
 }

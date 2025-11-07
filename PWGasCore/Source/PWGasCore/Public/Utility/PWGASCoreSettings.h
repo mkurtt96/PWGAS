@@ -19,10 +19,4 @@ public:
 	
 	UPROPERTY(EditAnywhere, config, Category="Registry")
 	TSoftObjectPtr<UPWAbilityRegistry> AbilityRegistry;
-	
-	UPROPERTY(EditAnywhere, config, Category="Tags")
-	FGameplayTag AbilityTag;
-
-	UPROPERTY(EditAnywhere, config, Category="Input")
-	TArray<FGameplayTag> DefaultInputSlots;
 };

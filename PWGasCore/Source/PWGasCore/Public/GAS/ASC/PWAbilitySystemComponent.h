@@ -5,13 +5,13 @@
 #include "CoreMinimal.h"
 #include "AbilitySystemComponent.h"
 #include "PWASC_AbilityLifecycle.h"
+#include "PWASC_CooldownHandler.h"
 #include "PWASC_DataManagement.h"
 #include "PWASC_EffectLifecycle.h"
 #include "PWASC_InputBinding.h"
 #include "PWAbilitySystemComponent.generated.h"
 
-enum class EPWInputEventType : uint8;
-
+enum class EInputEventType : uint8;
 DECLARE_MULTICAST_DELEGATE_TwoParams(FAnyGameplayTagChangedDelegate, FGameplayTag& /*Tag*/, int /*Count*/);
 
 UCLASS(ClassGroup=(GASCore), meta=(BlueprintSpawnableComponent))
@@ -34,35 +34,51 @@ public:
 	FPWASC_AbilityLifecycle& Abilities() const { return *AbilityLifecycle; }
 	FPWASC_EffectLifecycle& Effects() const { return *EffectLifecycle; }
 	FPWASC_InputBinding& Input() const { return *InputBinding; }
+	UPWASC_CooldownHandler& Cooldown() const { return *CooldownHandler; }
 
-	UFUNCTION(BlueprintCallable, Category="GASCore|Cooldown")
-	bool GetCooldownRemainingForTag(const FGameplayTag& CooldownTag, float& TimeRemaining, float& CooldownDuration) const;
-	UFUNCTION(BlueprintCallable, Category="GASCore|Cooldown")
-	bool GetCooldownRemainingForAbilityTag(const FGameplayTag& AbilityTag, float& TimeRemaining, float& TotalDuration) const;
-	UFUNCTION(BlueprintCallable, Category="GASCore|Cooldown")
-	int32 ClearCooldownByTag(const FGameplayTag& CooldownTag);
-	UFUNCTION(BlueprintCallable, Category="GASCore|Cooldown")
-	int32 ClearCooldownForAbilityTag(const FGameplayTag& AbilityTag);
-	UFUNCTION(BlueprintCallable, Category="GASCore|Cooldown")
-	bool AdjustCooldownForTag(const FGameplayTag& AbilityTag, float SecondsToReduce);
-	UFUNCTION(BlueprintCallable, Category="GASCore|Cooldown")
-	bool AdjustCooldownForAbilityTag(const FGameplayTag& AbilityTag, float SecondsToReduce);
+	//Ability Helpers
+	UFUNCTION(BlueprintCallable, Category="GASCore|Ability", meta=(DisplayName="Add Abilities"))
+	void BP_AddAbilities(const FGameplayTagContainer& AbilityTags);
+	UFUNCTION(BlueprintCallable, Category="GASCore|Ability", meta=(DisplayName="Add Ability"))
+	void BP_AddAbility(const FGameplayTag& AbilityTag, const FGameplayTag& InputTag = FGameplayTag());
+	UFUNCTION(BlueprintCallable, Category="GASCore|Ability", meta=(DisplayName="Remove Ability"))
+	void BP_RemoveAbility(const FGameplayTag& AbilityTag);
+	UFUNCTION(BlueprintCallable, Category="GASCore|Ability", meta=(DisplayName="Upgrade Ability"))
+	void BP_UpgradeAbility(const FGameplayTag& AbilityTag);
+	UFUNCTION(BlueprintCallable, Category="GASCore|Ability", meta=(DisplayName="Downgrade Ability"))
+	void BP_DowngradeAbility(const FGameplayTag& AbilityTag);
 
-	UFUNCTION()
-	void SendTaggedAbilityInput(FGameplayAbilitySpec AbilitySpec, EPWInputEventType InputType, FGameplayTag InputTag);
+	//Cooldown Helpers
+	UFUNCTION(BlueprintCallable, Category="GASCore|Cooldown", meta=(DisplayName="GetCooldown Remaining For Tag"))
+	bool BP_GetCooldownRemainingForTag(const FGameplayTag& CooldownTag, float& TimeRemaining, float& CooldownDuration) const;
+	UFUNCTION(BlueprintCallable, Category="GASCore|Cooldown", meta=(DisplayName="GetCooldown Remaining For Ability Tag"))
+	bool BP_GetCooldownRemainingForAbilityTag(const FGameplayTag& AbilityTag, float& TimeRemaining, float& TotalDuration) const;
+	UFUNCTION(BlueprintCallable, Category="GASCore|Cooldown", meta=(DisplayName="Clear Cooldown For Tag"))
+	int32 BP_ClearCooldownByTag(const FGameplayTag& CooldownTag);
+	UFUNCTION(BlueprintCallable, Category="GASCore|Cooldown", meta=(DisplayName="Clea rCooldown For Ability Tag"))
+	int32 BP_ClearCooldownForAbilityTag(const FGameplayTag& AbilityTag);
+	UFUNCTION(BlueprintCallable, Category="GASCore|Cooldown", meta=(DisplayName="Adjust Cooldown For Tag"))
+	bool BP_AdjustCooldownForTag(const FGameplayTag& CooldownTag, float SecondsToReduce);
+	UFUNCTION(BlueprintCallable, Category="GASCore|Cooldown", meta=(DisplayName="Adjust Cooldown For Ability Tag"))
+	bool BP_AdjustCooldownForAbilityTag(const FGameplayTag& AbilityTag, float SecondsToReduce);
 
+	UFUNCTION(Server, Unreliable)
+	void ServerSendInputEvent(const FGameplayTag& EventTag, const FGameplayEventData& Payload);
+
+	UFUNCTION(BlueprintCallable, Category="GASCore|Input")
+	void SendInputEvent(const FGameplayTag& InputTag, EInputEventType EventType);
+	
 protected:
 	virtual TUniquePtr<FPWASC_DataManagement> CreateDataManagement();
 	virtual TUniquePtr<FPWASC_AbilityLifecycle> CreateAbilityLifecycle();
 	virtual TUniquePtr<FPWASC_EffectLifecycle> CreateEffectLifecycle();
 	virtual TUniquePtr<FPWASC_InputBinding> CreateInputBinding();
-
-	UFUNCTION(Server, Reliable)
-	void ServerSendTaggedAbilityInput(FGameplayAbilitySpecHandle AbilityHandle, FPredictionKey PredictionKey, EPWInputEventType InputType, FGameplayTag InputTag);
+	virtual TUniquePtr<UPWASC_CooldownHandler> CreateCooldownHandler();
 
 private:
 	TUniquePtr<FPWASC_DataManagement> DataManagement;
 	TUniquePtr<FPWASC_AbilityLifecycle> AbilityLifecycle;
 	TUniquePtr<FPWASC_EffectLifecycle> EffectLifecycle;
 	TUniquePtr<FPWASC_InputBinding> InputBinding;
+	TUniquePtr<UPWASC_CooldownHandler> CooldownHandler;
 };

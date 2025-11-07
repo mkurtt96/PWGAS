@@ -65,6 +65,9 @@ class PWGASCORE_API UAbilityTask_PlayMontageAddTagAndWait : public UAbilityTask
 
 protected:
 
+	UFUNCTION(BlueprintCallable, Category="Ability|Tasks")
+	void StopMontage();
+
 	virtual void OnDestroy(bool AbilityEnded) override;
 
 	/** Checks if the ability is playing a montage and stops that montage, returns true if a montage was stopped, false if not. */

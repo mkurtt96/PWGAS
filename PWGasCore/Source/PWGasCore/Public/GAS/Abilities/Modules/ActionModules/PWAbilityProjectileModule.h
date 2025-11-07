@@ -8,7 +8,6 @@
 #include "Targeting/Data/PWTargetingData.h"
 #include "PWAbilityProjectileModule.generated.h"
 
-
 UCLASS(BlueprintType)
 class PWGASCORE_API UProjectileSpellParamsExtension : public UActorSpellParamsExtension
 {
@@ -37,7 +36,7 @@ class PWGASCORE_API UPWAbilityProjectileModule : public UPWAbilityActorModule
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	FPWProjectileSimConfig ProjectileConfig;
 	
 	UFUNCTION(BlueprintCallable, Category="Module")

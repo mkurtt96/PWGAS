@@ -120,14 +120,16 @@ bool FPWASC_DataManagement::DoesAbilityHaveTag(const FGameplayTag& AbilityTag, c
 	return DoesAbilityHaveTag(AbilityTag, TagToCheck.GetSingleTagContainer(), bMatchExact, bIncludeDynamicTags);
 }
 
-bool FPWASC_DataManagement::DoesAbilityHaveTag(const FGameplayAbilitySpec* AbilitySpec, const FGameplayTagContainer& TagsToCheck, const bool bMatchExact, const bool bIncludeDynamicTags)
+bool FPWASC_DataManagement::DoesAbilityHaveTag(const FGameplayAbilitySpecHandle& AbilitySpecHandle, const FGameplayTagContainer& TagsToCheck, const bool bMatchExact, const bool bIncludeDynamicTags) const
 {
-	if (!AbilitySpec) return false;
+	if (!AbilitySpecHandle.IsValid()) return false;
+	
+	FGameplayAbilitySpec* FocusedSpec = ASC.FindAbilitySpecFromHandle(AbilitySpecHandle);
 
-	FGameplayTagContainer AllTags = AbilitySpec->Ability.Get()->GetAssetTags();
+	FGameplayTagContainer AllTags = FocusedSpec->Ability.Get()->GetAssetTags();
 	if (bIncludeDynamicTags)
 	{
-		AllTags.AppendTags(AbilitySpec->GetDynamicSpecSourceTags());
+		AllTags.AppendTags(FocusedSpec->GetDynamicSpecSourceTags());
 	}
 
 	return bMatchExact
@@ -135,9 +137,9 @@ bool FPWASC_DataManagement::DoesAbilityHaveTag(const FGameplayAbilitySpec* Abili
 		       : AllTags.HasAny(TagsToCheck);
 }
 
-bool FPWASC_DataManagement::DoesAbilityHaveTag(const FGameplayAbilitySpec* AbilitySpec, const FGameplayTag& TagToCheck, const bool bMatchExact, const bool bIncludeDynamicTags)
+bool FPWASC_DataManagement::DoesAbilityHaveTag(const FGameplayAbilitySpecHandle& AbilitySpecHandle, const FGameplayTag& TagToCheck, const bool bMatchExact, const bool bIncludeDynamicTags) const
 {
-	return DoesAbilityHaveTag(AbilitySpec, TagToCheck.GetSingleTagContainer(), bMatchExact, bIncludeDynamicTags);
+	return DoesAbilityHaveTag(AbilitySpecHandle, TagToCheck.GetSingleTagContainer(), bMatchExact, bIncludeDynamicTags);
 }
 
 TArray<FGameplayTag> FPWASC_DataManagement::GetAbilitiesWithTags(const FGameplayTagContainer& TagsToCheck, const bool bMatchExact, const bool bIncludeDynamicTags) const

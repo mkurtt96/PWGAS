@@ -29,7 +29,7 @@ void UPWAbilityInstantEffectModule::ExecuteImmediateAction()
 	}
 
 	TArray<AActor*> Targets;
-	if (Targeting)
+	if (Targeting) //todo: should use targeting module
 	{
 		FPWTargetingResult Result;
 		Targeting->ComputeTarget(Result);

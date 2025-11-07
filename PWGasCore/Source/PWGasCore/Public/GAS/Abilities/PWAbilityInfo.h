@@ -2,12 +2,12 @@
 
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
-#include "PWAbilityDataBase.generated.h"
+#include "PWAbilityInfo.generated.h"
 
 class UGameplayAbility;
 
 USTRUCT(BlueprintType)
-struct FPWAbilityDataBase
+struct FPWAbilityInfo
 {
 	GENERATED_USTRUCT_BODY()
 
