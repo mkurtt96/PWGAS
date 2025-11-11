@@ -16,8 +16,12 @@ class PWGASCORE_API UPWAbilityInstantEffectModule : public UPWActionModule
 
 public:
 	UFUNCTION(BlueprintCallable, Category="Module")
-	virtual void ExecuteImmediateAction();
+	virtual void ApplyEffects();
+	UFUNCTION(BlueprintCallable, Category="Module")
+	virtual void RemoveEffects();
 	
 	virtual void GetRequiredDataModules_Implementation(TArray<TSubclassOf<UPWDataModule>>& OutRequiredModules) override;
+	
+	TArray<AActor*> Targets;
 	
 };

@@ -37,11 +37,11 @@ void FPWASC_InputBinding::AbilityInputTagReleased(const FGameplayTag& InputTag)
 	if (!InputTag.IsValid()) return;
 
 	FGameplayAbilitySpec* Spec = ASC.Data().GetSpecOfInput(InputTag);
-	if (Spec->IsActive())
+	if (Spec && Spec->IsActive())
 	{
 		ASC.AbilitySpecInputReleased(*Spec);
 	}
-	
+
 	ASC.SendInputEvent(InputTag, EInputEventType::Released);
 }
 

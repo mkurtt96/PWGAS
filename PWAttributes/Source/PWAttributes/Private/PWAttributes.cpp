@@ -2,7 +2,7 @@
 
 #include "PWAttributes.h"
 
-#include "BasicAttributes/AS_Health.h"
+#include "AttributeSetPerAttribute/BasicAttributes/AS_Health.h"
 
 #define LOCTEXT_NAMESPACE "FPWAttributesModule"
 

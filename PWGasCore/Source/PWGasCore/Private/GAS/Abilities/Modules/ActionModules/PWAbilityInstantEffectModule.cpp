@@ -10,7 +10,7 @@
 
 class UPWAbilityTargetingModule;
 
-void UPWAbilityInstantEffectModule::ExecuteImmediateAction()
+void UPWAbilityInstantEffectModule::ApplyEffects()
 {
 	if (!OwnerAbility)
 		return;
@@ -28,8 +28,7 @@ void UPWAbilityInstantEffectModule::ExecuteImmediateAction()
 		return;
 	}
 
-	TArray<AActor*> Targets;
-	if (Targeting) //todo: should use targeting module
+	if (Targeting)
 	{
 		FPWTargetingResult Result;
 		Targeting->ComputeTarget(Result);
@@ -54,6 +53,23 @@ void UPWAbilityInstantEffectModule::ExecuteImmediateAction()
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("[%s] Applied instant effect to %d targets."), *GetNameSafe(this), Targets.Num());
+}
+
+void UPWAbilityInstantEffectModule::RemoveEffects()
+{
+	auto* Effect = OwnerAbility->GetEffectModule();
+	
+	UAbilitySystemComponent* SourceASC = OwnerAbility->GetAbilitySystemComponentFromActorInfo();
+	if (!SourceASC)
+		return;
+
+	for (AActor* Target : Targets)
+	{
+		if (!Target) continue;
+		UAbilitySystemComponent* TargetASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(Target);
+		if (TargetASC)
+			Effect->RemoveEffects(SourceASC, TargetASC);
+	}
 }
 
 void UPWAbilityInstantEffectModule::GetRequiredDataModules_Implementation(TArray<TSubclassOf<UPWDataModule>>& OutRequiredModules)

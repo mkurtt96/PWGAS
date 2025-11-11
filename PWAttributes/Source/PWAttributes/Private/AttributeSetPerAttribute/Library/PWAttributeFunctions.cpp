@@ -1,10 +1,10 @@
 ﻿// copyright mkurtt96
 
 
-#include "Library/PWAttributeFunctions.h"
+#include "AttributeSetPerAttribute/Library/PWAttributeFunctions.h"
 
 #include "AbilitySystemComponent.h"
-#include "AttributeBases/PWAttributeSet_Tagged.h"
+#include "AttributeSetPerAttribute/PWAttributeSet_Tagged.h"
 
 
 bool UPWAttributeFunctions::ResolveAttributeOnASC(const UAbilitySystemComponent* ASC, const FGameplayTag& Tag, FGameplayAttribute& Out)

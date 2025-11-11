@@ -23,6 +23,9 @@ public:
 protected:
 	UPROPERTY(Transient)
 	TObjectPtr<USphereComponent> AuraSphere = nullptr;
+	
+	UPROPERTY(BlueprintReadOnly)
+	TArray<AActor*> OverlappingActors;
 
 	UPROPERTY(EditAnywhere)
 	bool bDrawDebug = false;
@@ -36,5 +39,5 @@ protected:
 						  UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 	// Applies or removes gameplay effects to overlapping actors
-	void ApplyAuraEffect(AActor* Target, bool bApply);
+	void ApplyAuraEffect(const AActor* Target, bool bApply) const;
 };

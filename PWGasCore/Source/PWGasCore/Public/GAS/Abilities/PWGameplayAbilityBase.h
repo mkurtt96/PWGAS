@@ -131,6 +131,11 @@ public:
 	UFUNCTION(BlueprintPure, Category="Animation")
 	void GetAnimMontageFromActor(UAnimMontage*& OutMontage, float& OutAnimRate, int Index = 0) const;
 	
+	UFUNCTION(BlueprintPure, Category="Animation")
+	UAnimInstance* GetAnimInstanceFromActor() const;
+	UFUNCTION(BlueprintPure)
+	FGameplayTag GetActivationInputTag() const;
+	
 	// == Utils  == //
 	// ============ //
 

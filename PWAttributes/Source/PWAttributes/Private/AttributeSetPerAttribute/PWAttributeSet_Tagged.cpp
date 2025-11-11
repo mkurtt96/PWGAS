@@ -1,7 +1,7 @@
 ﻿// copyright mkurtt96
 
 
-#include "AttributeBases/PWAttributeSet_Tagged.h"
+#include "AttributeSetPerAttribute/PWAttributeSet_Tagged.h"
 
 #include "GameplayTagContainer.h"
 

@@ -64,14 +64,16 @@ void UPWAbilityAuraModule::GetRequiredDataModules_Implementation(TArray<TSubclas
 void UPWAbilityAuraModule::HandleBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	ApplyAuraEffect(OtherActor, true);
+	OverlappingActors.AddUnique(OtherActor);
 }
 
 void UPWAbilityAuraModule::HandleEndOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
 	ApplyAuraEffect(OtherActor, false);
+	OverlappingActors.Remove(OtherActor);
 }
 
-void UPWAbilityAuraModule::ApplyAuraEffect(AActor* Target, bool bApply)
+void UPWAbilityAuraModule::ApplyAuraEffect(const AActor* Target, const bool bApply) const
 {
 	if (!Target || !OwnerAbility)
 		return;

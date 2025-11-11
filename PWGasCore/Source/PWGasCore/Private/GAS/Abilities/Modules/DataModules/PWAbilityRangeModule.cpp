@@ -47,7 +47,8 @@ void UPWAbilityRangeModule::ApplyRangePolicy(AActor* Origin, FPWTargetingResult&
 void UPWAbilityRangeModule::Initialize(UPWGameplayAbilityBase* InOwner)
 {
 	Super::Initialize(InOwner);
-	RangePolicy->Initialize(InOwner);
+	if (RangePolicy) 
+		RangePolicy->Initialize(InOwner);
 }
 
 void UPWAbilityRangeModule::ExtendParams(USpellParams* Params) const

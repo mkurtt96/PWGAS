@@ -17,12 +17,6 @@ namespace PWTags::ASC
 	UE_DEFINE_GAMEPLAY_TAG(Root, "ASC");
 }
 
-namespace PWTags::ASC::State
-{
-	UE_DEFINE_GAMEPLAY_TAG(Root, "ASC.State");
-	UE_DEFINE_GAMEPLAY_TAG(Casting, "ASC.State.Casting");
-}
-
 namespace PWTags::MontageEvent
 {
 	UE_DEFINE_GAMEPLAY_TAG(Root, "MontageEvent");

@@ -6,6 +6,7 @@
 #include "AbilitySystemComponent.h"
 #include "GameplayTagsManager.h"
 #include "GameplayTagsSettings.h"
+#include "GameFramework/Character.h"
 #include "GameFramework/PlayerState.h"
 #include "GAS/Abilities/Modules/ActionModules/PWAbilityInstantEffectModule.h"
 #include "GAS/Abilities/Modules/ActionModules/PWAbilityMultiActorModule.h"
@@ -35,13 +36,13 @@ APawn* UPWGameplayAbilityBase::GetPawn() const
 
 void UPWGameplayAbilityBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
-	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
-
 	ForEachModule([this](UPWAbilityModule* Mod)
 	{
 		Mod->Initialize(this);
 		Mod->OnAbilityActivated();
 	});
+	
+	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 }
 
 USpellParams* UPWGameplayAbilityBase::MakeSpellParams()
@@ -126,6 +127,30 @@ void UPWGameplayAbilityBase::GetAnimMontageFromActor(UAnimMontage*& OutMontage, 
 	UE_LOG(LogTemp, Warning, TEXT("AvatarActor: %s does not use the IPWAnimSetProvider, See UPWGameplayAbilityBase::GetAnimationMontageFromActor"), *AvatarActor->GetName())
 }
 
+UAnimInstance* UPWGameplayAbilityBase::GetAnimInstanceFromActor() const
+{
+	const ACharacter* Character = Cast<ACharacter>(GetAvatarActorFromActorInfo());
+	if (!Character)
+	{
+		UE_LOG(LogGameplayTags, Log, TEXT("Actor is not Character, overwrite this function "));
+		return nullptr;
+	}
+	if (UAnimInstance* AI = Character->GetMesh()->GetAnimInstance())
+	{
+		return AI;
+	}
+	UE_LOG(LogGameplayTags, Log, TEXT(""));
+	return nullptr;
+}
+
+FGameplayTag UPWGameplayAbilityBase::GetActivationInputTag() const
+{
+	for (auto Tag : GetCurrentAbilitySpec()->GetDynamicSpecSourceTags())
+		if (Tag.MatchesTag(PWTags::Input::Root))
+			return Tag;
+	return FGameplayTag();
+}
+
 FGameplayTagContainer UPWGameplayAbilityBase::GetCooldownGameplayTags() const
 {
 	FGameplayTagContainer MutableTags = FGameplayTagContainer();
@@ -195,7 +220,7 @@ void UPWGameplayAbilityBase::EnsureRequiredDataModules()
 		{
 			UPWDataModule* NewData = NewObject<UPWDataModule>(this, DataClass, NAME_None, RF_Transactional);
 			DataModules.Add(NewData);
-			NewData->Initialize(this);
+			//NewData->Initialize(this);
 			UE_LOG(LogTemp, Log, TEXT("[PWGASCore] Auto-added required DataModule: %s"), *DataClass->GetName());
 		}
 	}
@@ -343,7 +368,7 @@ void UPWGameplayAbilityBase::GenerateIdentityTag()
 	{
 		ActivationBlockedTags.AddTag(CooldownTag);
 	}
-	
+
 	SyncIdentityIntoAssetTags();
 
 	PostEditChange();
