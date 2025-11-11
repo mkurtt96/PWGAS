@@ -17,9 +17,8 @@ This repository contains the three GAS-related core modules extracted and refact
 
 | Module | Status | Description |
 |:--|:--|:--|
-| **PWGASCore** | ⚙️ *Finalizing* | Core framework extending Unreal’s Ability System with lifecycle management, ability tasks, async utilities, and custom effect context. |
+| **PWGASCore** | ⚙️ *In Testing* | Core framework extending Unreal’s Ability System with lifecycle management, ability tasks, async utilities, and custom effect context. |
 | **PWAttributes** | ✅ *Stable* | Modular AttributeSet system for scalable stat management and initialization. |
-| **PWGASIntegration** | 🧠 *Planned* | Integration bridge between GASCore and gameplay systems such as Inventory, Projectiles, and Shop. |
 
 ---
 
@@ -50,7 +49,6 @@ This repository contains the three GAS-related core modules extracted and refact
 **PW.GAS** is part of a larger modular ecosystem, including:
 
 - **PW.ProjectileFramework** : Reusable projectile, hit, and VFX logic.  
-- **PW.Inventory / PW.Shop** : Gameplay systems that integrate through `PWGASIntegration`.  
 - **PW.SharedTypes / PW.Contracts** : Common data types and interfaces used across PW modules.
 
 ---
