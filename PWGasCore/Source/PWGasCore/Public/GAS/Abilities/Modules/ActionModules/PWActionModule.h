@@ -12,7 +12,7 @@ struct FPWTargetingResult;
 /**
  * 
  */
-UCLASS()
+UCLASS(Blueprintable, BlueprintType, EditInlineNew, DefaultToInstanced)
 class PWGASCORE_API UPWActionModule : public UPWAbilityModule
 {
 	GENERATED_BODY()

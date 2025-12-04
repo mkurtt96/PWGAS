@@ -3,12 +3,24 @@
 
 #include "GAS/Abilities/Derived/PWGameplayAbility_Channeling.h"
 
+UPWGameplayAbility_Channeling::UPWGameplayAbility_Channeling()
+{
+	ActivationGroup = EPWActivationGroup::Exclusive_Replaceable;
+}
+
 void UPWGameplayAbility_Channeling::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
 	if (bAutoStartChannel)
 		StartChanneling();
+}
+
+void UPWGameplayAbility_Channeling::CancelAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateCancelAbility)
+{
+	StopChanneling(true);
+	
+	Super::CancelAbility(Handle, ActorInfo, ActivationInfo, bReplicateCancelAbility);
 }
 
 void UPWGameplayAbility_Channeling::StartChanneling()
@@ -19,6 +31,8 @@ void UPWGameplayAbility_Channeling::StartChanneling()
 	CurrentChannelTime = 0.f;
 
 	OnChannelStart();
+
+	
 
 	GetWorld()->GetTimerManager().SetTimer(
 		ChannelTickTimer,
@@ -55,9 +69,12 @@ void UPWGameplayAbility_Channeling::StopChanneling(const bool bWasCanceled)
 	bIsChanneling = false;
 	GetWorld()->GetTimerManager().ClearTimer(ChannelTickTimer);
 
-	OnChannelEnd(bWasCanceled);
+	if (bWasCanceled)
+		OnChannelCancelled();
+	else
+		OnChannelEnd();
 
-	EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), true, bWasCanceled);
+	//EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), true, bWasCanceled);
 }
 
 float UPWGameplayAbility_Channeling::GetChannelPercentage() const

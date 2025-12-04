@@ -3,169 +3,129 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "NativeGameplayTags.h"
 #include "Abilities/GameplayAbility.h"
-#include "GameplayTagsSettings.h"
-#include "Ability/SpellParams.h"
-#include "Modules/PWAbilityModule.h"
-#include "Modules/ControlModules/PWControlModule.h"
-#include "Modules/DataModules/PWDataModule.h"
-#include "Targeting/Data/PWTargetingData.h"
 #include "PWGameplayAbilityBase.generated.h"
 
-class UPWAbilityInstantEffectModule;
-class UPWAbilityMultiActorModule;
-class UPWAbilityProjectileModule;
-class UPWAbilityMultiProjectileModule;
-class UPWAbilityRadiusModule;
-class UPWActionModule;
-class UPWAbilityActorModule;
-class UPWAbilityPrecastModule;
-class UPWAbilityEffectModule;
-class UPWAbilityAuraModule;
-class UPWAbilityTargetingModule;
-class UPWAbilityRangeModule;
+class USpellParams;
+class UPWAbilitySystemComponent;
+class UGameplayTagsSettings;
 
-UCLASS(Blueprintable)
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(Tag_Ability_Message_Cooldown);
+
+UENUM(BlueprintType)
+enum class EPWActivationGroup : uint8
+{
+	Independent = 0,
+	Exclusive_Replaceable = 1,
+	Exclusive_Blocking = 2,
+	MAX = 3	UMETA(Hidden)
+};
+
+USTRUCT()
+struct FCooldownMessage
+{
+	GENERATED_BODY()
+
+	UPWAbilitySystemComponent* ASC;
+	FGameplayTag AbilityTag;
+	float Duration;
+};
+
+USTRUCT(BlueprintType)
+struct PWGASCORE_API FCostData
+{
+	GENERATED_BODY()
+
+	FString AttributeName;
+	EGameplayModOp::Type Modifier;
+	float Value;
+
+	FCostData() = default;
+	FCostData(const FString& AttributeName, const EGameplayModOp::Type Modifier, const float Value)
+	{
+		this->AttributeName = AttributeName;
+		this->Modifier = Modifier;
+		this->Value = Value;
+	}
+};
+
+UCLASS()
 class PWGASCORE_API UPWGameplayAbilityBase : public UGameplayAbility
 {
 	GENERATED_BODY()
 
 public:
+	UPWGameplayAbilityBase();
+	
+	UPROPERTY(EditDefaultsOnly, Category="Ability", meta=(GameplayTagFilter = "Ability.Skill"))
+	FGameplayTag AbilityTag;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Animation", meta=(GameplayTagFilter = "AnimMontage"))
+	TArray<FGameplayTag> AnimationTags;
+	
+	// Returns true if the requested activation group is a valid transition.
+	UFUNCTION(BlueprintCallable, BlueprintPure = false, Category = "Ability", Meta = (ExpandBoolAsExecs = "ReturnValue"))
+	bool CanChangeActivationGroup(EPWActivationGroup NewGroup) const;
+	// Tries to change the activation group.  Returns true if it successfully changed.
+	UFUNCTION(BlueprintCallable, BlueprintPure = false, Category = "Ability", Meta = (ExpandBoolAsExecs = "ReturnValue"))
+	bool ChangeActivationGroup(EPWActivationGroup NewGroup);
+
 	// == Ability / Config == //
 	// ====================== //
 
-	UPROPERTY(EditDefaultsOnly, Category="Ability", meta=(GameplayTagFilter = "Ability.Skill"))
-	FGameplayTag AbilityTag;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Ability|Data")
-	FScalableFloat Cooldown;
-
 	USpellParams* MakeSpellParams();
-
-	// == Modules  == //
-	// ============== //
-
-	UPROPERTY(EditDefaultsOnly, Instanced, Category="Ability|Modules")
-	TObjectPtr<UPWActionModule> ActionModule;
-	UPROPERTY(EditDefaultsOnly, Instanced, Category="Ability|Modules")
-	TArray<TObjectPtr<UPWDataModule>> DataModules;
-	UPROPERTY(EditDefaultsOnly, Instanced, Category="Ability|Modules")
-	TArray<TObjectPtr<UPWControlModule>> ControlModules;
-
-	template <typename T>
-	T* GetActionModule() const
-	{
-		return Cast<T>(ActionModule);
-	}
-
-	template <typename T>
-	T* GetDataModule() const
-	{
-		for (UPWDataModule* Mod : DataModules)
-			if (Mod && Mod->IsA(T::StaticClass()))
-				return Cast<T>(Mod);
-
-		return nullptr;
-	}
-
-	template <typename T>
-	T* GetControlModule() const
-	{
-		for (UPWControlModule* Mod : ControlModules)
-			if (Mod && Mod->IsA(T::StaticClass()))
-				return Cast<T>(Mod);
-
-		return nullptr;
-	}
-
-	void ForEachModule(TFunctionRef<void(UPWAbilityModule*)> Callback);
-
-	UFUNCTION(BlueprintPure, Category="Modules")
-	UPWAbilityInstantEffectModule* GetInstantEffectModule() const;
-	UFUNCTION(BlueprintPure, Category="Modules")
-	UPWAbilityActorModule* GetActorModule() const;
-	UFUNCTION(BlueprintPure, Category="Modules")
-	UPWAbilityMultiActorModule* GetMultiActorModule() const;
-	UFUNCTION(BlueprintPure, Category="Modules")
-	UPWAbilityProjectileModule* GetProjectileModule() const;
-	UFUNCTION(BlueprintPure, Category="Modules")
-	UPWAbilityMultiProjectileModule* GetMultiProjectileModule() const;
-	UFUNCTION(BlueprintPure, Category="Modules")
-	UPWAbilityPrecastModule* GetPrecastModule() const;
-	UFUNCTION(BlueprintPure, Category="Modules")
-	UPWAbilityEffectModule* GetEffectModule() const;
-	UFUNCTION(BlueprintPure, Category="Modules")
-	UPWAbilityAuraModule* GetAuraModule() const;
-	UFUNCTION(BlueprintPure, Category="Modules")
-	UPWAbilityTargetingModule* GetTargetingModule() const;
-	UFUNCTION(BlueprintPure, Category="Modules")
-	UPWAbilityRangeModule* GetRangeModule() const;
-	UFUNCTION(BlueprintPure, Category="Modules")
-	UPWAbilityRadiusModule* GetRadiusModule() const;
-
-	// == Gameplay Targeting  == //
-	// ========================= //
-
-	UFUNCTION(BlueprintCallable, Category="Targeting")
-	FPWTargetingResult ComputeTargetOnce() const;
-
-	// Build TargetData from targeting result
-	UFUNCTION(BlueprintCallable, Category="Targeting")
-	FGameplayAbilityTargetDataHandle MakeTargetDataFromResult(const FPWTargetingResult& Result) const;
-
-	// Lightweight extractor for a single TargetData entry
-	FVector ExtractLocation(const FGameplayAbilityTargetData* TD) const;
-
-	// == Cooldown  == //
-	// =============== //
-
-	virtual float GetCooldown(int32 Level) const;
-
-	// == Visual/Audio/Anim  == //
-	// ======================== //
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Animation", meta=(GameplayTagFilter = "AnimMontage"))
-	TArray<FGameplayTag> AnimationTags;
-
-	// Lightweight extractor for a single TargetData entry
-	UFUNCTION(BlueprintPure, Category="Animation")
-	void GetAnimMontageFromActor(UAnimMontage*& OutMontage, float& OutAnimRate, int Index = 0) const;
-	
-	UFUNCTION(BlueprintPure, Category="Animation")
-	UAnimInstance* GetAnimInstanceFromActor() const;
-	UFUNCTION(BlueprintPure)
-	FGameplayTag GetActivationInputTag() const;
 	
 	// == Utils  == //
 	// ============ //
 
 	APlayerController* GetPC() const;
 	APawn* GetPawn() const;
-
+	
 protected:
-	// == UE Overrides  == //
-	// =================== //
-
-	virtual void PostLoad() override;
-	virtual FGameplayTagContainer GetCooldownGameplayTags() const;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Activation")
+	EPWActivationGroup ActivationGroup;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cooldowns", meta=(ToolTip="Used with GE_Cooldown that handles cooldown tag and duration dynamically."))
+	FScalableFloat Cooldown;
+	UPROPERTY(EditDefaultsOnly, Category = Tags, meta=(Categories="AbilityTagCategory"))
+	FGameplayTagContainer CancellationTags;
+	
+	//~UGameplayAbility interface
+	virtual void SetCanBeCanceled(bool bCanBeCanceled) override;
+	virtual bool CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags = nullptr, const FGameplayTagContainer* TargetTags = nullptr, FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
 	virtual void ApplyCooldown(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo) const override;
-	virtual void CancelAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateCancelAbility) override;
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
-
-	// == Modules  == //
-	// ============== //
-
-	void EnsureRequiredDataModules();
-
+	//~End of UGameplayAbility interface
+	
+	TArray<FDelegateHandle> CancellationTagDelegateHandles;
+	void OnCancellationTagChanged(FGameplayTag GameplayTag, int NewCount);
+	
 private:
-	static TMap<UClass*, TArray<UPWAbilityModule*>> CachedByType;
 
+public:
+	UFUNCTION(BlueprintCallable, Category = "Ability")
+	UPWAbilitySystemComponent* GetPWAbilitySystemComponentFromActorInfo() const;
+	UFUNCTION(BlueprintCallable, Category = "Ability")
+	AController* GetControllerFromActorInfo() const;
+	UFUNCTION(BlueprintCallable, Category = "Cooldown")
+	virtual float GetCooldown(int32 Level) const;
+	UFUNCTION(BlueprintCallable, Category = "Cost")
+	virtual void GetCost(int32 Level, TArray<FCostData> CostData) const;
+	
+	UFUNCTION(BlueprintPure, Category="Animation")
+	void GetAnimMontageFromActor(UAnimMontage*& OutMontage, float& OutAnimRate, int Index = 0) const;
+	UFUNCTION(BlueprintPure, Category="Animation")
+	UAnimInstance* GetAnimInstanceFromActor() const;
+	UFUNCTION(BlueprintPure, Category = "Ability")
+	FGameplayTag GetActivationInputTag() const;
 
+	EPWActivationGroup GetActivationGroup() const { return ActivationGroup; }
+	virtual FGameplayTagContainer GetCooldownGameplayTags() const;
+
+	
+#if WITH_EDITOR
 	// == Editor Helpers  == //
 	// ===================== //
-
-#if WITH_EDITOR
 	void SyncIdentityIntoAssetTags();
 	static void AddTagIfMissing(UGameplayTagsSettings* Settings, const FName& TagFName, const FString& Comment);
 	static bool EnsureProjectTagExists(const FString& Tag, const FString& Comment = TEXT(""));
@@ -174,10 +134,8 @@ public:
 	void GenerateIdentityTag();
 
 protected:
+	virtual void PostLoad() override;
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& E) override;
-
-public:
-
-protected:
 #endif
+	
 };

@@ -37,13 +37,14 @@ namespace PWTags::Ability::SetByCaller
 namespace PWTags::Ability::Activation
 {
 	UE_DEFINE_GAMEPLAY_TAG(Root, "Ability.Activation");
+	UE_DEFINE_GAMEPLAY_TAG(Failed, "Ability.Activation.Failed");
 	UE_DEFINE_GAMEPLAY_TAG(OnGranted, "Ability.Activation.OnGranted");
 }
 
 namespace PWTags::Ability::Deactivation
 {
 	UE_DEFINE_GAMEPLAY_TAG(Root, "Ability.Deactivation");
-	UE_DEFINE_GAMEPLAY_TAG(OnRemoval, "Ability.Deactivation.OnRemoval");
+	UE_DEFINE_GAMEPLAY_TAG(OnRemoved, "Ability.Deactivation.OnRemoval");
 }
 
 namespace PWTags::Ability::State

@@ -1,0 +1,8 @@
+﻿// copyright mkurtt96
+
+#pragma once
+
+
+PWGASCORE_API DECLARE_LOG_CATEGORY_EXTERN(LogPWGASCoreAbilitySystem, Log, All);
+PWGASCORE_API DECLARE_LOG_CATEGORY_EXTERN(LogPWGASCoreAbility, Log, All);
+PWGASCORE_API DECLARE_LOG_CATEGORY_EXTERN(LogPWGASCoreAbilityModule, Log, All);

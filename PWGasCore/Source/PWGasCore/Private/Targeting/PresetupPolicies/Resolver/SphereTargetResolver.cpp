@@ -4,10 +4,10 @@
 #include "Targeting/PresetupPolicies/Resolver/SphereTargetResolver.h"
 
 #include "Engine/OverlapResult.h"
-#include "GAS/Abilities/PWGameplayAbilityBase.h"
-#include "GAS/Abilities/Modules/DataModules/PWAbilityRadiusModule.h"
+#include "GAS/Abilities/PWModularGameplayAbility.h"
+#include "GAS/Abilities/Modules/DataModules/PWAbilityModule_Radius.h"
 
-void USphereTargetResolver::Initialize_Implementation(UPWGameplayAbilityBase* InOwner)
+void USphereTargetResolver::Initialize_Implementation(UPWModularGameplayAbility* InOwner)
 {
 	Super::Initialize_Implementation(InOwner);
 	Radius = OwnerAbility->GetRadiusModule()->GetRadiusValue();
@@ -32,5 +32,5 @@ void USphereTargetResolver::GetRequiredDataModules_Implementation(TArray<TSubcla
 {
 	Super::GetRequiredDataModules_Implementation(OutRequiredModules);
 
-	OutRequiredModules.Add(UPWAbilityRadiusModule::StaticClass());
+	OutRequiredModules.Add(UPWAbilityModule_Radius::StaticClass());
 }

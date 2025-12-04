@@ -264,5 +264,8 @@ void UAbilityTask_PlayMontageAddTagAndWait::StopMontage()
 		OnCancelled.Broadcast();
 	}
 
+	UAbilitySystemComponent* ASC = AbilitySystemComponent.Get();
+	ASC->CurrentMontageStop();
+
 	ExternalCancel();
 }

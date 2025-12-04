@@ -3,14 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GAS/Abilities/PWGameplayAbilityBase.h"
+#include "GAS/Abilities/PWModularGameplayAbility.h"
 #include "PWGameplayAbility_Charged.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class PWGASCORE_API UPWGameplayAbility_Charged : public UPWGameplayAbilityBase
+class PWGASCORE_API UPWGameplayAbility_Charged : public UPWModularGameplayAbility
 {
 	GENERATED_BODY()
 
@@ -37,6 +37,7 @@ public:
 								 const FGameplayAbilityActorInfo* ActorInfo,
 								 const FGameplayAbilityActivationInfo ActivationInfo,
 								 const FGameplayEventData* TriggerEventData) override;
+	virtual void CancelAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateCancelAbility) override;
 
 	UFUNCTION(BlueprintCallable, Category="Charge")
 	virtual void StartCharging();

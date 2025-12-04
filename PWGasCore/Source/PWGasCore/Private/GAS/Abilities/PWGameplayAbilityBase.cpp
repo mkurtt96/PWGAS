@@ -3,46 +3,142 @@
 
 #include "GAS/Abilities/PWGameplayAbilityBase.h"
 
-#include "AbilitySystemComponent.h"
+#include "AbilitySystemLog.h"
 #include "GameplayTagsManager.h"
 #include "GameplayTagsSettings.h"
+#include "PWGASCoreLogChannels.h"
+#include "Ability/SpellParams.h"
 #include "GameFramework/Character.h"
+#include "GameFramework/GameplayMessageSubsystem.h"
 #include "GameFramework/PlayerState.h"
-#include "GAS/Abilities/Modules/ActionModules/PWAbilityInstantEffectModule.h"
-#include "GAS/Abilities/Modules/ActionModules/PWAbilityMultiActorModule.h"
-#include "GAS/Abilities/Modules/ActionModules/PWActionModule.h"
-#include "GAS/Abilities/Modules/ControlModules/PWAbilityTargetingModule.h"
-#include "GAS/Abilities/Modules/DataModules/PWAbilityRadiusModule.h"
-#include "PWGasCore/Public/GAS/Abilities/Modules/PWAbilityModule.h"
-#include "GAS/ASC/PWASC_InputBinding.h"
+#include "GAS/ASC/PWAbilitySystemComponent.h"
 #include "GAS/Tags/GASCoreTags.h"
-#include "Targeting/Data/PWTargetingData.h"
 #include "VisualAndAudio/PWAnimSetProvider.h"
 
 
-APlayerController* UPWGameplayAbilityBase::GetPC() const
-{
-	if (const FGameplayAbilityActorInfo* Info = GetCurrentActorInfo())
-		return Cast<APlayerController>(Info->PlayerController.Get());
-	return nullptr;
+UE_DEFINE_GAMEPLAY_TAG(Tag_Ability_Message_Cooldown, "Ability.Message.Cooldown");
+
+#define ENSURE_ABILITY_IS_INSTANTIATED_OR_RETURN(FunctionName, ReturnValue) \
+{ \
+if (!ensure(IsInstantiated())) \
+{ \
+ABILITY_LOG(Error, TEXT("%s: " #FunctionName " cannot be called on a non-instanced ability. Check the instancing policy."), *GetPathName()); \
+return ReturnValue; \
+} \
 }
 
-APawn* UPWGameplayAbilityBase::GetPawn() const
+UPWGameplayAbilityBase::UPWGameplayAbilityBase()
 {
-	if (const FGameplayAbilityActorInfo* Info = GetCurrentActorInfo())
-		return Cast<APawn>(Info->AvatarActor.Get());
-	return nullptr;
+	ActivationGroup = EPWActivationGroup::Independent;
 }
 
-void UPWGameplayAbilityBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
+float UPWGameplayAbilityBase::GetCooldown(int32 Level) const
 {
-	ForEachModule([this](UPWAbilityModule* Mod)
+	return Cooldown.GetValueAtLevel(Level);
+}
+
+void UPWGameplayAbilityBase::GetCost(int32 Level, TArray<FCostData> CostData) const
+{
+	UGameplayEffect* CostGE = GetCostGameplayEffect();
+	for (FGameplayModifierInfo Modifier : CostGE->Modifiers)
 	{
-		Mod->Initialize(this);
-		Mod->OnAbilityActivated();
-	});
-	
-	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
+		float Value;
+		Modifier.ModifierMagnitude.GetStaticMagnitudeIfPossible(Level, Value);
+		FCostData Data = FCostData(Modifier.Attribute.AttributeName, Modifier.ModifierOp, Value);
+		CostData.Add(Data);
+	}
+}
+
+void UPWGameplayAbilityBase::GetAnimMontageFromActor(UAnimMontage*& OutMontage, float& OutAnimRate, int Index) const
+{
+	const AActor* AvatarActor = GetAvatarActorFromActorInfo();
+	if (!AvatarActor || !AnimationTags.IsValidIndex(Index) || !AnimationTags[Index].IsValid())
+		return;
+
+	if (AvatarActor->GetClass()->ImplementsInterface(UPWAnimSetProvider::StaticClass()))
+	{
+		OutMontage = IPWAnimSetProvider::Execute_GetMontageForTag(AvatarActor, AnimationTags[Index], OutAnimRate);
+		return;
+	}
+
+	UE_LOG(LogPWGASCoreAbility, Warning, TEXT("UPWGameplayAbilityBase::GetAnimMontageFromActor: AvatarActor: %s does not use the IPWAnimSetProvider, See UPWGameplayAbilityBase::GetAnimationMontageFromActor"), *AvatarActor->GetName())
+}
+
+UAnimInstance* UPWGameplayAbilityBase::GetAnimInstanceFromActor() const
+{
+	const ACharacter* Character = Cast<ACharacter>(GetAvatarActorFromActorInfo());
+	if (!Character)
+	{
+		UE_LOG(LogPWGASCoreAbility, Log, TEXT("UPWGameplayAbilityBase::GetAnimInstanceFromActor: Actor is not Character, overwrite this function "));
+		return nullptr;
+	}
+	if (UAnimInstance* AI = Character->GetMesh()->GetAnimInstance())
+	{
+		return AI;
+	}
+	UE_LOG(LogPWGASCoreAbility, Log, TEXT("UPWGameplayAbilityBase::GetAnimInstanceFromActor: Could not get UAnimInstance from Character"));
+	return nullptr;
+}
+
+FGameplayTag UPWGameplayAbilityBase::GetActivationInputTag() const
+{
+	for (auto Tag : GetCurrentAbilitySpec()->GetDynamicSpecSourceTags())
+		if (Tag.MatchesTag(PWTags::Input::Root))
+			return Tag;
+	return FGameplayTag();
+}
+
+bool UPWGameplayAbilityBase::CanChangeActivationGroup(EPWActivationGroup NewGroup) const
+{
+	if (!IsInstantiated() || !IsActive())
+	{
+		return false;
+	}
+
+	if (ActivationGroup == NewGroup)
+	{
+		return true;
+	}
+
+	UPWAbilitySystemComponent* ASC = GetPWAbilitySystemComponentFromActorInfo();
+	check(ASC);
+
+	if ((ActivationGroup != EPWActivationGroup::Exclusive_Blocking) && ASC->Abilities().IsActivationGroupBlocked(NewGroup))
+	{
+		// This ability can't change groups if it's blocked (unless it is the one doing the blocking).
+		return false;
+	}
+
+	if ((NewGroup == EPWActivationGroup::Exclusive_Replaceable) && !CanBeCanceled())
+	{
+		// This ability can't become replaceable if it can't be canceled.
+		return false;
+	}
+
+	return true;
+}
+
+bool UPWGameplayAbilityBase::ChangeActivationGroup(EPWActivationGroup NewGroup)
+{
+	ENSURE_ABILITY_IS_INSTANTIATED_OR_RETURN(ChangeActivationGroup, false);
+
+	if (!CanChangeActivationGroup(NewGroup))
+	{
+		return false;
+	}
+
+	if (ActivationGroup != NewGroup)
+	{
+		UPWAbilitySystemComponent* ASC = GetPWAbilitySystemComponentFromActorInfo();
+		check(ASC);
+
+		ASC->Abilities().RemoveAbilityFromActivationGroup(ActivationGroup, this);
+		ASC->Abilities().AddAbilityToActivationGroup(NewGroup, this);
+
+		ActivationGroup = NewGroup;
+	}
+
+	return true;
 }
 
 USpellParams* UPWGameplayAbilityBase::MakeSpellParams()
@@ -60,95 +156,54 @@ USpellParams* UPWGameplayAbilityBase::MakeSpellParams()
 	return Params;
 }
 
-FPWTargetingResult UPWGameplayAbilityBase::ComputeTargetOnce() const
+APlayerController* UPWGameplayAbilityBase::GetPC() const
 {
-	if (UPWAbilityTargetingModule* TMod = GetControlModule<UPWAbilityTargetingModule>())
-	{
-		FPWTargetingResult R;
-		TMod->ComputeTarget(R);
-		return R;
-	}
-	return FPWTargetingResult();
-}
-
-FGameplayAbilityTargetDataHandle UPWGameplayAbilityBase::MakeTargetDataFromResult(const FPWTargetingResult& Result) const
-{
-	if (Result.bHasHit && Result.Hit.bBlockingHit)
-	{
-		FGameplayAbilityTargetData_SingleTargetHit* HitData = new FGameplayAbilityTargetData_SingleTargetHit(Result.Hit);
-		return FGameplayAbilityTargetDataHandle(HitData);
-	}
-
-	FGameplayAbilityTargetData_LocationInfo* LocData = new FGameplayAbilityTargetData_LocationInfo();
-	LocData->TargetLocation.LocationType = EGameplayAbilityTargetingLocationType::LiteralTransform;
-	LocData->TargetLocation.LiteralTransform = FTransform(Result.Rotation, Result.Location);
-	return FGameplayAbilityTargetDataHandle(LocData);
-}
-
-FVector UPWGameplayAbilityBase::ExtractLocation(const FGameplayAbilityTargetData* TD) const
-{
-	auto ExtractLocation = [](const FGameplayAbilityTargetData* TD) -> TOptional<FVector>
-	{
-		if (const auto* HitTD = static_cast<const FGameplayAbilityTargetData_SingleTargetHit*>(TD))
-		{
-			if (HitTD->HitResult.IsValidBlockingHit())
-			{
-				return HitTD->HitResult.ImpactPoint;
-			}
-		}
-		else if (const auto* LocTD = static_cast<const FGameplayAbilityTargetData_LocationInfo*>(TD))
-		{
-			const FTransform Xform = LocTD->TargetLocation.GetTargetingTransform();
-			return Xform.GetLocation();
-		}
-
-		return {};
-	};
-	return {};
-}
-
-float UPWGameplayAbilityBase::GetCooldown(int32 Level) const
-{
-	return Cooldown.GetValueAtLevel(Level);
-}
-
-void UPWGameplayAbilityBase::GetAnimMontageFromActor(UAnimMontage*& OutMontage, float& OutAnimRate, int Index) const
-{
-	const AActor* AvatarActor = GetAvatarActorFromActorInfo();
-	if (!AvatarActor || !AnimationTags.IsValidIndex(Index) || !AnimationTags[Index].IsValid())
-		return;
-
-	if (AvatarActor->GetClass()->ImplementsInterface(UPWAnimSetProvider::StaticClass()))
-	{
-		OutMontage = IPWAnimSetProvider::Execute_GetMontageForTag(AvatarActor, AnimationTags[Index], OutAnimRate);
-		return;
-	}
-
-	UE_LOG(LogTemp, Warning, TEXT("AvatarActor: %s does not use the IPWAnimSetProvider, See UPWGameplayAbilityBase::GetAnimationMontageFromActor"), *AvatarActor->GetName())
-}
-
-UAnimInstance* UPWGameplayAbilityBase::GetAnimInstanceFromActor() const
-{
-	const ACharacter* Character = Cast<ACharacter>(GetAvatarActorFromActorInfo());
-	if (!Character)
-	{
-		UE_LOG(LogGameplayTags, Log, TEXT("Actor is not Character, overwrite this function "));
-		return nullptr;
-	}
-	if (UAnimInstance* AI = Character->GetMesh()->GetAnimInstance())
-	{
-		return AI;
-	}
-	UE_LOG(LogGameplayTags, Log, TEXT(""));
+	if (const FGameplayAbilityActorInfo* Info = GetCurrentActorInfo())
+		return Cast<APlayerController>(Info->PlayerController.Get());
 	return nullptr;
 }
 
-FGameplayTag UPWGameplayAbilityBase::GetActivationInputTag() const
+APawn* UPWGameplayAbilityBase::GetPawn() const
 {
-	for (auto Tag : GetCurrentAbilitySpec()->GetDynamicSpecSourceTags())
-		if (Tag.MatchesTag(PWTags::Input::Root))
-			return Tag;
-	return FGameplayTag();
+	if (const FGameplayAbilityActorInfo* Info = GetCurrentActorInfo())
+		return Cast<APawn>(Info->AvatarActor.Get());
+	return nullptr;
+}
+
+void UPWGameplayAbilityBase::SetCanBeCanceled(bool bCanBeCanceled)
+{
+	// The ability can not block canceling if it's replaceable.
+	if (!bCanBeCanceled && (ActivationGroup == EPWActivationGroup::Exclusive_Replaceable))
+	{
+		return;
+	}
+
+	Super::SetCanBeCanceled(bCanBeCanceled);
+}
+
+bool UPWGameplayAbilityBase::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, FGameplayTagContainer* OptionalRelevantTags) const
+{
+	if (!ActorInfo || !ActorInfo->AbilitySystemComponent.IsValid())
+	{
+		return false;
+	}
+
+	if (!Super::CanActivateAbility(Handle, ActorInfo, SourceTags, TargetTags, OptionalRelevantTags))
+	{
+		return false;
+	}
+
+	UPWAbilitySystemComponent* ASC = CastChecked<UPWAbilitySystemComponent>(ActorInfo->AbilitySystemComponent.Get());
+	if (ASC->Abilities().IsActivationGroupBlocked(ActivationGroup))
+	{
+		if (OptionalRelevantTags)
+		{
+			OptionalRelevantTags->AddTag(PWTags::Ability::Activation::Failed);
+		}
+		return false;
+	}
+
+	return true;
 }
 
 FGameplayTagContainer UPWGameplayAbilityBase::GetCooldownGameplayTags() const
@@ -171,128 +226,109 @@ FGameplayTagContainer UPWGameplayAbilityBase::GetCooldownGameplayTags() const
 
 void UPWGameplayAbilityBase::ApplyCooldown(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo) const
 {
+	float Cd = Cooldown.GetValueAtLevel(GetAbilityLevel());
 	if (const UGameplayEffect* CooldownGE = GetCooldownGameplayEffect())
 	{
 		const FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(CooldownGE->GetClass(), GetAbilityLevel());
 		const FGameplayTag CooldownTag = PWTags::Ability::Skill::GetCooldownTag(AbilityTag);
 		SpecHandle.Data.Get()->DynamicGrantedTags.AppendTags(CooldownTag.GetSingleTagContainer());
-		SpecHandle.Data.Get()->SetSetByCallerMagnitude(PWTags::Ability::SetByCaller::Cooldown, Cooldown.GetValueAtLevel(GetAbilityLevel()));
+		SpecHandle.Data.Get()->SetSetByCallerMagnitude(PWTags::Ability::SetByCaller::Cooldown, Cd);
 		ApplyGameplayEffectSpecToOwner(Handle, ActorInfo, ActivationInfo, SpecHandle);
 	}
-}
 
-void UPWGameplayAbilityBase::CancelAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateCancelAbility)
-{
-	Super::CancelAbility(Handle, ActorInfo, ActivationInfo, bReplicateCancelAbility);
-}
+	bool bIsNetAuthority = ActorInfo->IsNetAuthority();
+	UE_LOG(LogGameplayTags, Log, TEXT("bIsNetAuthority %hs"), bIsNetAuthority? "true":"false");
 
-void UPWGameplayAbilityBase::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
-{
-	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
-	ForEachModule([this](UPWAbilityModule* Mod)
+	if (const FGameplayAbilityActorInfo* Info = GetCurrentActorInfo())
 	{
-		Mod->OnAbilityEnded();
-	});
-}
-
-void UPWGameplayAbilityBase::EnsureRequiredDataModules()
-{
-	TArray<TSubclassOf<UPWDataModule>> Required;
-	ForEachModule([&Required](UPWAbilityModule* Module)
-	{
-		Module->GetRequiredDataModules(Required);
-	});
-
-	for (TSubclassOf<UPWDataModule> DataClass : Required)
-	{
-		if (!DataClass)
-			continue;
-
-		bool bExists = false;
-		for (UPWDataModule* M : DataModules)
-			if (M && M->IsA(DataClass))
-			{
-				bExists = true;
-				break;
-			}
-
-		if (!bExists)
+		if (Info->IsLocallyControlled())
 		{
-			UPWDataModule* NewData = NewObject<UPWDataModule>(this, DataClass, NAME_None, RF_Transactional);
-			DataModules.Add(NewData);
-			//NewData->Initialize(this);
-			UE_LOG(LogTemp, Log, TEXT("[PWGASCore] Auto-added required DataModule: %s"), *DataClass->GetName());
+			FCooldownMessage Message = FCooldownMessage();
+			Message.ASC = Cast<UPWAbilitySystemComponent>(GetAbilitySystemComponentFromActorInfo());
+			Message.AbilityTag = AbilityTag;
+			Message.Duration = Cd;
+			UGameplayMessageSubsystem& MessageSystem = UGameplayMessageSubsystem::Get(GetWorld());
+			MessageSystem.BroadcastMessage(Tag_Ability_Message_Cooldown, Message);
 		}
 	}
 }
 
-void UPWGameplayAbilityBase::ForEachModule(TFunctionRef<void(UPWAbilityModule*)> Callback)
+void UPWGameplayAbilityBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
-	if (ActionModule)
-		Callback(ActionModule);
+	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-	for (UPWDataModule* M : DataModules)
-		if (M)
-			Callback(M);
-
-	for (UPWControlModule* M : ControlModules)
-		if (M)
-			Callback(M);
+	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
+	{
+		for (const FGameplayTag& Tag : CancellationTags)
+		{
+			auto& Event = ASC->RegisterGameplayTagEvent(Tag, EGameplayTagEventType::NewOrRemoved);
+			FDelegateHandle DelegateHandle = Event.AddUObject(this, &ThisClass::OnCancellationTagChanged);
+			CancellationTagDelegateHandles.Add(DelegateHandle);
+		}
+	}
 }
 
-UPWAbilityInstantEffectModule* UPWGameplayAbilityBase::GetInstantEffectModule() const
+void UPWGameplayAbilityBase::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
-	return GetActionModule<UPWAbilityInstantEffectModule>();
+	if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
+	{
+		for (const FGameplayTag& Tag : CancellationTags)
+		{
+			auto& Event = ASC->RegisterGameplayTagEvent(Tag, EGameplayTagEventType::NewOrRemoved);
+			for (FDelegateHandle& DelegateHandle : CancellationTagDelegateHandles)
+			{
+				Event.Remove(DelegateHandle);
+			}
+		}
+	}
+
+
+	CancellationTagDelegateHandles.Reset();
+
+	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
-UPWAbilityActorModule* UPWGameplayAbilityBase::GetActorModule() const
+void UPWGameplayAbilityBase::OnCancellationTagChanged(FGameplayTag GameplayTag, int NewCount)
 {
-	return GetActionModule<UPWAbilityActorModule>();
+	if (NewCount > 0 && CanBeCanceled())
+	{
+		CancelAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, /*bReplicate*/true);
+	}
 }
 
-UPWAbilityMultiActorModule* UPWGameplayAbilityBase::GetMultiActorModule() const
+UPWAbilitySystemComponent* UPWGameplayAbilityBase::GetPWAbilitySystemComponentFromActorInfo() const
 {
-	return GetActionModule<UPWAbilityMultiActorModule>();
+	return (CurrentActorInfo ? Cast<UPWAbilitySystemComponent>(CurrentActorInfo->AbilitySystemComponent.Get()) : nullptr);
 }
 
-UPWAbilityProjectileModule* UPWGameplayAbilityBase::GetProjectileModule() const
+AController* UPWGameplayAbilityBase::GetControllerFromActorInfo() const
 {
-	return GetActionModule<UPWAbilityProjectileModule>();
-}
+	if (CurrentActorInfo)
+	{
+		if (AController* PC = CurrentActorInfo->PlayerController.Get())
+		{
+			return PC;
+		}
 
-UPWAbilityMultiProjectileModule* UPWGameplayAbilityBase::GetMultiProjectileModule() const
-{
-	return GetActionModule<UPWAbilityMultiProjectileModule>();
-}
+		// Look for a player controller or pawn in the owner chain.
+		AActor* TestActor = CurrentActorInfo->OwnerActor.Get();
+		while (TestActor)
+		{
+			if (AController* C = Cast<AController>(TestActor))
+			{
+				return C;
+			}
 
-UPWAbilityPrecastModule* UPWGameplayAbilityBase::GetPrecastModule() const
-{
-	return GetControlModule<UPWAbilityPrecastModule>();
-}
+			if (APawn* Pawn = Cast<APawn>(TestActor))
+			{
+				return Pawn->GetController();
+			}
 
-UPWAbilityEffectModule* UPWGameplayAbilityBase::GetEffectModule() const
-{
-	return GetDataModule<UPWAbilityEffectModule>();
-}
+			TestActor = TestActor->GetOwner();
+		}
+	}
 
-UPWAbilityAuraModule* UPWGameplayAbilityBase::GetAuraModule() const
-{
-	return GetActionModule<UPWAbilityAuraModule>();
-}
-
-UPWAbilityTargetingModule* UPWGameplayAbilityBase::GetTargetingModule() const
-{
-	return GetControlModule<UPWAbilityTargetingModule>();
-}
-
-UPWAbilityRangeModule* UPWGameplayAbilityBase::GetRangeModule() const
-{
-	return GetDataModule<UPWAbilityRangeModule>();
-}
-
-UPWAbilityRadiusModule* UPWGameplayAbilityBase::GetRadiusModule() const
-{
-	return GetDataModule<UPWAbilityRadiusModule>();
+	return nullptr;
 }
 
 #if WITH_EDITOR
@@ -385,7 +421,6 @@ void UPWGameplayAbilityBase::PostEditChangeProperty(FPropertyChangedEvent& E)
 {
 	Super::PostEditChangeProperty(E);
 	SyncIdentityIntoAssetTags();
-	EnsureRequiredDataModules();
 }
 
 #endif

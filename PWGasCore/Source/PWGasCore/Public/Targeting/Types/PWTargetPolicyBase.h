@@ -7,7 +7,7 @@
 #include "PWTargetPolicyBase.generated.h"
 
 class UPWDataModule;
-class UPWGameplayAbilityBase;
+class UPWModularGameplayAbility;
 struct FPWTargetingResult;
 
 // UINTERFACE(BlueprintType)
@@ -52,16 +52,16 @@ class PWGASCORE_API UPWTargetPolicyBase : public UObject
 	GENERATED_BODY()
 
 public:
-	UPROPERTY()
-	UPWGameplayAbilityBase* OwnerAbility = nullptr;
+	UPROPERTY(BlueprintReadOnly)
+	TObjectPtr<UPWModularGameplayAbility> OwnerAbility = nullptr;
 	
 	/**
 	 * Initialize any custom variables here.
 	 * @param InOwner Owning Gameplay Ability
 	 */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Targeting")
-	void Initialize(UPWGameplayAbilityBase* InOwner);
-	virtual void Initialize_Implementation(UPWGameplayAbilityBase* InOwner);
+	void Initialize(UPWModularGameplayAbility* InOwner);
+	virtual void Initialize_Implementation(UPWModularGameplayAbility* InOwner);
 
 	UFUNCTION(BlueprintNativeEvent, Category="Module")
 	void GetRequiredDataModules(TArray<TSubclassOf<UPWDataModule>>& OutRequiredModules);

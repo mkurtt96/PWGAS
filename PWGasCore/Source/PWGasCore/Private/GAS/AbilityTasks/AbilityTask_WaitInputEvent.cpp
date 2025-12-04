@@ -12,6 +12,7 @@ UAbilityTask_WaitInputEvent* UAbilityTask_WaitInputEvent::WaitInputEvent(
 	UAbilityTask_WaitInputEvent* Task = NewAbilityTask<UAbilityTask_WaitInputEvent>(OwningAbility);
 	Task->WatchedInputTag = InputTag;
 	Task->WatchedEventType = EventType;
+	Task->ownerability = OwningAbility;
 	return Task;
 }
 
@@ -32,7 +33,6 @@ void UAbilityTask_WaitInputEvent::OnGameplayEventReceived(const FGameplayEventDa
 	if (!Payload)
 		return;
 
-	// Extract stored input tag
 	const FGameplayTagContainer& Tags = Payload->InstigatorTags;
 	if (!Tags.HasTagExact(WatchedInputTag))
 		return;
@@ -45,4 +45,4 @@ void UAbilityTask_WaitInputEvent::OnGameplayEventReceived(const FGameplayEventDa
 
 	EventReceived.Broadcast(WatchedInputTag);
 	EndTask();
-}
+ }

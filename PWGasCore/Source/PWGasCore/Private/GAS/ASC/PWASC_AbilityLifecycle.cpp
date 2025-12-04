@@ -4,12 +4,17 @@
 #include "GAS/ASC/PWASC_AbilityLifecycle.h"
 
 #include "GameplayAbilitySpec.h"
+#include "PWGASCoreLogChannels.h"
 #include "GAS/Abilities/PWAbilityInfo.h"
-#include "GAS/Abilities/PWAbilityRegistry.h"
 #include "GAS/ASC/PWAbilitySystemComponent.h"
 #include "GAS/ASC/PWASC_DataManagement.h"
 #include "GAS/Tags/GASCoreTags.h"
-#include "Utility/PWGASData.h"
+#include "Settings/PWGASCoreSettings.h"
+
+FPWASC_AbilityLifecycle::FPWASC_AbilityLifecycle(UPWAbilitySystemComponent& InASC) : ASC(InASC)
+{
+	FMemory::Memset(ActivationGroupCounts, 0, sizeof(ActivationGroupCounts));
+}
 
 void FPWASC_AbilityLifecycle::AddAbilities(const FGameplayTagContainer& AbilityTags) const
 {
@@ -22,7 +27,7 @@ void FPWASC_AbilityLifecycle::AddAbilities(const FGameplayTagContainer& AbilityT
 
 void FPWASC_AbilityLifecycle::AddAbility(const FGameplayTag& AbilityTag, const FGameplayTag& InputTag) const
 {
-	const FPWAbilityInfo AbilityData = UPWGASData::GetAbilityRegistry(ASC.GetWorld())->GetAbilityByTag(AbilityTag);
+	const FPWAbilityInfo AbilityData = UPWGASCoreSettings::Get()->GetAbilityByTag(AbilityTag);
 	if (!AbilityData.IsValid())
 		UE_LOG(LogTemp, Warning, TEXT("%s >> AbilityData is invalid!!"), *FString(__FUNCTION__));
 
@@ -42,7 +47,7 @@ void FPWASC_AbilityLifecycle::RemoveAbility(const FGameplayTag& AbilityTag) cons
 	FGameplayAbilitySpec* Spec = ASC.Data().GetSpecOfAbility(AbilityTag);
 	if (!Spec) return;
 
-	if (ApplyDeactivationPolicies(*Spec, PWTags::Ability::Deactivation::OnRemoval))
+	if (ApplyDeactivationPolicies(*Spec, PWTags::Ability::Deactivation::OnRemoved))
 		AbilityEnded.Broadcast(AbilityTag);
 
 	ASC.ClearAbility(Spec->Handle);
@@ -75,8 +80,8 @@ void FPWASC_AbilityLifecycle::DowngradeAbility(const FGameplayTag& AbilityTag)
 void FPWASC_AbilityLifecycle::RemoveGrantedAbility(const FGameplayAbilitySpecHandle& Handle) const
 {
 	ASC.CancelAbilityHandle(Handle);
-	ASC.ClearAbility(Handle);
 	ASC.MarkAbilitySpecDirty(*ASC.FindAbilitySpecFromHandle(Handle));
+	ASC.ClearAbility(Handle);
 }
 
 bool FPWASC_AbilityLifecycle::HasAbility(const FGameplayTag& AbilityTag) const
@@ -93,7 +98,7 @@ int32 FPWASC_AbilityLifecycle::GetAbilityLevel(const FGameplayTag& AbilityTag) c
 
 bool FPWASC_AbilityLifecycle::IsAbilityMaxLevel(const FGameplayTag& AbilityTag) const
 {
-	const FPWAbilityInfo AbilityData = UPWGASData::GetAbilityRegistry(ASC.GetWorld())->GetAbilityByTag(AbilityTag);
+	const FPWAbilityInfo AbilityData = UPWGASCoreSettings::Get()->GetAbilityByTag(AbilityTag);
 	const FGameplayAbilitySpec* Spec = ASC.Data().GetSpecOfAbility(AbilityTag);
 	if (!Spec) return false;
 	if (Spec->Level == AbilityData.MaxLevel) return true;
@@ -183,4 +188,125 @@ void FPWASC_AbilityLifecycle::ApplyDeactivationPolicies(const FGameplayTag& Even
 			ASC.CancelAbilityHandle(Spec->Handle);
 		}
 	}
+}
+
+void FPWASC_AbilityLifecycle::CancelAbilitiesByFunc(const TShouldCancelAbilityFunc& ShouldCancelFunc, const bool bReplicateCancelAbility) const
+{
+	FScopedAbilityListLock ActiveScopeLock(ASC);
+	for (const FGameplayAbilitySpec& AbilitySpec : ASC.GetActivatableAbilities())
+	{
+		if (!AbilitySpec.IsActive())
+		{
+			continue;
+		}
+
+		UPWGameplayAbilityBase* LyraAbilityCDO = CastChecked<UPWGameplayAbilityBase>(AbilitySpec.Ability);
+
+		if (LyraAbilityCDO->GetInstancingPolicy() != EGameplayAbilityInstancingPolicy::NonInstanced)
+		{
+			// Cancel all the spawned instances, not the CDO.
+			TArray<UGameplayAbility*> Instances = AbilitySpec.GetAbilityInstances();
+			for (UGameplayAbility* AbilityInstance : Instances)
+			{
+				UPWGameplayAbilityBase* LyraAbilityInstance = CastChecked<UPWGameplayAbilityBase>(AbilityInstance);
+
+				if (ShouldCancelFunc(LyraAbilityInstance, AbilitySpec.Handle))
+				{
+					if (LyraAbilityInstance->CanBeCanceled())
+					{
+						LyraAbilityInstance->CancelAbility(AbilitySpec.Handle, ASC.AbilityActorInfo.Get(), LyraAbilityInstance->GetCurrentActivationInfo(), bReplicateCancelAbility);
+					}
+					else
+					{
+						UE_LOG(LogPWGASCoreAbilitySystem, Error, TEXT("CancelAbilitiesByFunc: Can't cancel ability [%s] because CanBeCanceled is false."), *LyraAbilityInstance->GetName());
+					}
+				}
+			}
+		}
+		else
+		{
+			// Cancel the non-instanced ability CDO.
+			if (ShouldCancelFunc(LyraAbilityCDO, AbilitySpec.Handle))
+			{
+				// Non-instanced abilities can always be canceled.
+				check(LyraAbilityCDO->CanBeCanceled());
+				LyraAbilityCDO->CancelAbility(AbilitySpec.Handle, ASC.AbilityActorInfo.Get(), FGameplayAbilityActivationInfo(), bReplicateCancelAbility);
+			}
+		}
+	}
+}
+
+bool FPWASC_AbilityLifecycle::IsActivationGroupBlocked(EPWActivationGroup Group) const
+{
+	bool bBlocked = false;
+
+	switch (Group)
+	{
+	case EPWActivationGroup::Independent:
+		// Independent abilities are never blocked.
+		bBlocked = false;
+		break;
+
+	case EPWActivationGroup::Exclusive_Replaceable:
+	case EPWActivationGroup::Exclusive_Blocking:
+		// Exclusive abilities can activate if nothing is blocking.
+		bBlocked = (ActivationGroupCounts[(uint8)EPWActivationGroup::Exclusive_Blocking] > 0);
+		break;
+
+	default:
+		checkf(false, TEXT("IsActivationGroupBlocked: Invalid ActivationGroup [%d]\n"), (uint8)Group);
+		break;
+	}
+
+	return bBlocked;
+}
+
+void FPWASC_AbilityLifecycle::AddAbilityToActivationGroup(EPWActivationGroup Group, const UPWGameplayAbilityBase* Ability)
+{
+	check(Ability);
+	check(ActivationGroupCounts[(uint8)Group] < INT32_MAX);
+
+	ActivationGroupCounts[(uint8)Group]++;
+
+	const bool bReplicateCancelAbility = false;
+
+	switch (Group)
+	{
+	case EPWActivationGroup::Independent:
+		// Independent abilities do not cancel any other abilities.
+		break;
+
+	case EPWActivationGroup::Exclusive_Replaceable:
+	case EPWActivationGroup::Exclusive_Blocking:
+		CancelActivationGroupAbilities(EPWActivationGroup::Exclusive_Replaceable, Ability, bReplicateCancelAbility);
+		break;
+
+	default:
+		checkf(false, TEXT("AddAbilityToActivationGroup: Invalid ActivationGroup [%d]\n"), (uint8)Group);
+		break;
+	}
+
+	const int32 ExclusiveCount = ActivationGroupCounts[(uint8)EPWActivationGroup::Exclusive_Replaceable] + ActivationGroupCounts[(uint8)EPWActivationGroup::Exclusive_Blocking];
+	if (!ensure(ExclusiveCount <= 1))
+	{
+		UE_LOG(LogPWGASCoreAbilitySystem, Error, TEXT("AddAbilityToActivationGroup: Multiple exclusive abilities are running."));
+	}
+}
+
+void FPWASC_AbilityLifecycle::RemoveAbilityFromActivationGroup(EPWActivationGroup Group, const UPWGameplayAbilityBase* Ability)
+{
+	check(Ability);
+	check(ActivationGroupCounts[(uint8)Group] > 0);
+
+	ActivationGroupCounts[(uint8)Group]--;
+}
+
+void FPWASC_AbilityLifecycle::CancelActivationGroupAbilities(EPWActivationGroup Group, const UPWGameplayAbilityBase* IgnoreAbility, bool bReplicateCancelAbility) const
+{
+	auto ShouldCancelFunc = [this, Group, IgnoreAbility](const UPWGameplayAbilityBase* Ability, FGameplayAbilitySpecHandle Handle)
+	{
+		return ((Ability->GetActivationGroup() == Group) && (Ability != IgnoreAbility));
+	};
+
+	CancelAbilitiesByFunc(ShouldCancelFunc, bReplicateCancelAbility);
 }

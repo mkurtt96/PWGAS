@@ -3,12 +3,14 @@
 
 #include "GAS/ASC/PWAbilitySystemComponent.h"
 
-#include "GAS/Abilities/PWGameplayAbilityBase.h"
+#include "GAS/Abilities/PWModularGameplayAbility.h"
 #include "GAS/ASC/PWASC_AbilityLifecycle.h"
 #include "GAS/ASC/PWASC_DataManagement.h"
 #include "GAS/ASC/PWASC_EffectLifecycle.h"
 #include "GAS/ASC/PWASC_InputBinding.h"
+#include "GAS/ASC/PWASC_VfxLifecycle.h"
 #include "GAS/Data/GASCoreEnums.h"
+#include "GAS/Data/PWNiagaraEntry.h"
 #include "GAS/Tags/GASCoreTags.h"
 
 UPWAbilitySystemComponent::UPWAbilitySystemComponent()
@@ -17,7 +19,8 @@ UPWAbilitySystemComponent::UPWAbilitySystemComponent()
 	AbilityLifecycle = nullptr;
 	EffectLifecycle = nullptr;
 	InputBinding = nullptr;
-	InputBinding = nullptr;
+	CooldownHandler = nullptr;
+	VfxLifecycle = nullptr;
 }
 
 void UPWAbilitySystemComponent::OnRegister()
@@ -28,6 +31,8 @@ void UPWAbilitySystemComponent::OnRegister()
 	if (!AbilityLifecycle) AbilityLifecycle = CreateAbilityLifecycle();
 	if (!EffectLifecycle) EffectLifecycle = CreateEffectLifecycle();
 	if (!InputBinding) InputBinding = CreateInputBinding();
+	if (!CooldownHandler) CooldownHandler = CreateCooldownHandler();
+	if (!VfxLifecycle) VfxLifecycle = CreateVfxLifecycle();
 
 	GameplayTagCountContainer.RegisterGenericGameplayEvent().AddLambda([this](FGameplayTag Tag, int32 Count)
 	{
@@ -42,6 +47,8 @@ void UPWAbilitySystemComponent::OnUnregister()
 	EffectLifecycle.Reset();
 	AbilityLifecycle.Reset();
 	DataManagement.Reset();
+	CooldownHandler.Reset();
+	VfxLifecycle.Reset();
 }
 
 void UPWAbilitySystemComponent::BeginPlay()
@@ -139,6 +146,19 @@ void UPWAbilitySystemComponent::SendInputEvent(const FGameplayTag& InputTag, EIn
 	}
 }
 
+void UPWAbilitySystemComponent::Multicast_PlayNiagara_Implementation(const FPWNiagaraEntry& Entry)
+{
+	//UE_LOG(LogTemp, Log, TEXT("UPWAbilitySystemComponent::Multicast_PlayNiagara_Implementation, Auth: %hhd, UniqueId: %d"), GetOwner()->HasAuthority(), Entry.UniqueId);
+	Vfx().PlayNiagara_Local(Entry);
+}
+
+void UPWAbilitySystemComponent::Multicast_StopNiagara_Implementation(const TArray<int32>& Ids)
+{
+	//for (int32 Id : Ids)
+		//UE_LOG(LogTemp, Log, TEXT("UPWAbilitySystemComponent::Multicast_StopNiagara_Implementation, Auth: %hhd, UniqueId: %d"), GetOwner()->HasAuthority(), Id);
+	Vfx().StopNiagaraList_Local(Ids);
+}
+
 TUniquePtr<FPWASC_DataManagement> UPWAbilitySystemComponent::CreateDataManagement()
 {
 	return MakeUnique<FPWASC_DataManagement>(*this);
@@ -159,7 +179,30 @@ TUniquePtr<FPWASC_InputBinding> UPWAbilitySystemComponent::CreateInputBinding()
 	return MakeUnique<FPWASC_InputBinding>(*this);
 }
 
-TUniquePtr<UPWASC_CooldownHandler> UPWAbilitySystemComponent::CreateCooldownHandler()
+TUniquePtr<FPWASC_CooldownHandler> UPWAbilitySystemComponent::CreateCooldownHandler()
 {
-	return MakeUnique<UPWASC_CooldownHandler>(*this);
+	return MakeUnique<FPWASC_CooldownHandler>(*this);
 }
+
+TUniquePtr<FPWASC_VfxLifecycle> UPWAbilitySystemComponent::CreateVfxLifecycle()
+{
+	return MakeUnique<FPWASC_VfxLifecycle>(*this);
+}
+
+void UPWAbilitySystemComponent::NotifyAbilityActivated(const FGameplayAbilitySpecHandle Handle, UGameplayAbility* Ability)
+{
+	Super::NotifyAbilityActivated(Handle, Ability);
+
+	const UPWGameplayAbilityBase* PWAbility = Cast<UPWGameplayAbilityBase>(Ability);
+	Abilities().AddAbilityToActivationGroup(PWAbility->GetActivationGroup(), PWAbility);
+}
+
+void UPWAbilitySystemComponent::NotifyAbilityEnded(FGameplayAbilitySpecHandle Handle, UGameplayAbility* Ability, bool bWasCancelled)
+{
+	Super::NotifyAbilityEnded(Handle, Ability, bWasCancelled);
+
+	const UPWGameplayAbilityBase* PWAbility = CastChecked<UPWGameplayAbilityBase>(Ability);
+	Abilities().RemoveAbilityFromActivationGroup(PWAbility->GetActivationGroup(), PWAbility);
+}
+
+

@@ -4,7 +4,7 @@
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/Actor.h"
 
-void UPWTargetPolicyBase::Initialize_Implementation(UPWGameplayAbilityBase* InOwner)
+void UPWTargetPolicyBase::Initialize_Implementation(UPWModularGameplayAbility* InOwner)
 {
 	OwnerAbility = InOwner;
 }

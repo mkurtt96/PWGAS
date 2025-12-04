@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include "CoreMinimal.h"
 #include "PWTargetingData.generated.h"
 
 USTRUCT(BlueprintType)
@@ -12,9 +13,11 @@ struct FPWTargetingResult
 	UPROPERTY(BlueprintReadOnly) FHitResult Hit;
 	UPROPERTY(BlueprintReadOnly) TArray<AActor*> HitActors;
 
-	AActor* GetPrimaryActor() const
+	AActor* GetPrimaryActor() const;
+
+	bool IsValid() const
 	{
-		return (HitActors.Num() > 0 && HitActors[0]) ? HitActors[0] : Hit.GetActor();
+		return bHasHit || !Location.IsNearlyZero();
 	}
 };
 

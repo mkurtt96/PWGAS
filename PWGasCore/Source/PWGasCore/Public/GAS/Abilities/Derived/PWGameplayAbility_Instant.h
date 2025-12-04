@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GAS/Abilities/PWGameplayAbilityBase.h"
+#include "GAS/Abilities/PWModularGameplayAbility.h"
 #include "PWGameplayAbility_Instant.generated.h"
 
 
@@ -11,7 +11,7 @@
  * 
  */
 UCLASS(Blueprintable, BlueprintType)
-class PWGASCORE_API UPWGameplayAbility_Instant : public UPWGameplayAbilityBase
+class PWGASCORE_API UPWGameplayAbility_Instant : public UPWModularGameplayAbility
 {
 	GENERATED_BODY()
 

@@ -20,7 +20,7 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category="Targeting")
 	float Radius = 400.f;
 
-	virtual void Initialize_Implementation(UPWGameplayAbilityBase* InOwner) override;
+	virtual void Initialize_Implementation(UPWModularGameplayAbility* InOwner) override;
 	
 	virtual void Resolve_Implementation(const AActor* Actor, const FPWTargetingResult& Target, TArray<AActor*>& OutActors) const override;
 

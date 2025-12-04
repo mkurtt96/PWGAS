@@ -3,9 +3,9 @@
 
 #include "PWGasCore/Public/GAS/Abilities/Modules/PWAbilityModule.h"
 
-#include "GAS/Abilities/PWGameplayAbilityBase.h"
+#include "GAS/Abilities/PWModularGameplayAbility.h"
 
-void UPWAbilityModule::Initialize(UPWGameplayAbilityBase* InOwner)
+void UPWAbilityModule::Initialize(UPWModularGameplayAbility* InOwner)
 {
 	OwnerAbility = InOwner;
 }

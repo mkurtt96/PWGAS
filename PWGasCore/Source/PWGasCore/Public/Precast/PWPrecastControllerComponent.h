@@ -34,15 +34,17 @@ public:
 	UFUNCTION(BlueprintPure, Category="GASCore|Precast")
 	FPWTargetingResult GetTargetingResult() const { return Result; }
 
+	void UpdateProjectileSimConfig(const FPWProjectileSimConfig& Cfg);
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 private:
-	UPROPERTY() UPWTargetingSource* TargetingSource = nullptr;
-	UPROPERTY() UPWRangePolicy* RangePolicy = nullptr;
-	UPROPERTY() UPWPrecastVisualizer* Visualizer = nullptr;
-	UPROPERTY() UPWTargetResolver* TargetResolver = nullptr;
+	UPROPERTY() TObjectPtr<UPWTargetingSource> TargetingSource = nullptr;
+	UPROPERTY() TObjectPtr<UPWRangePolicy> RangePolicy = nullptr;
+	UPROPERTY() TObjectPtr<UPWPrecastVisualizer> Visualizer = nullptr;
+	UPROPERTY() TObjectPtr<UPWTargetResolver> TargetResolver = nullptr;
 
 	bool bRunning = false;
 

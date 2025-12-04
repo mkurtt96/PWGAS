@@ -7,6 +7,7 @@
 #include "DetailLayoutBuilder.h"
 #include "DetailWidgetRow.h"
 #include "GAS/Abilities/PWGameplayAbilityBase.h"
+#include "GAS/Abilities/PWModularGameplayAbility.h"
 
 TSharedRef<IDetailCustomization> FPWGameplayAbility_DetailCustomization::MakeInstance()
 {

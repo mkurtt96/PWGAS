@@ -14,6 +14,11 @@ UPWAttributeSetBase::UPWAttributeSetBase()
 {
 }
 
+FGameplayTag UPWAttributeSetBase::GetAttributeTag(FGameplayAttribute Attribute)
+{
+	return *TagsToAttributes.FindKey(Attribute);
+}
+
 float UPWAttributeSetBase::GetAttributeValue(const FGameplayTag& AttributeTag) const
 {
 	if (const FGameplayAttribute* Attr = TagsToAttributes.Find(AttributeTag))

@@ -1,0 +1,106 @@
+﻿// copyright mkurtt96
+
+
+#include "GAS/Abilities/Modules/ActionModules/PWAbilityModule_InstantEffect.h"
+
+#include "AbilitySystemGlobals.h"
+#include "GAS/Abilities/PWModularGameplayAbility.h"
+#include "GAS/Abilities/Modules/ControlModules/PWAbilityModule_Targeting.h"
+#include "GAS/Abilities/Modules/DataModules/PWAbilityModule_Effect.h"
+#include "GAS/AbilityTasks/PWAbilityTask_TargetFromSource.h"
+
+class UPWAbilityModule_Targeting;
+
+void UPWAbilityModule_InstantEffect::ApplyEffects()
+{
+	if (!OwnerAbility) return;
+
+	UWorld* World = OwnerAbility->GetWorld();
+	if (!World) return;
+
+	auto* Effect = OwnerAbility->GetEffectModule();
+	if (!Effect)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[%s] InstantEffectAction has no EffectModule!"), *GetNameSafe(this));
+		return;
+	}
+
+	// Use Targeting module
+	if (OwnerAbility->GetTargetingModule())
+	{
+		ActiveTargetTask = UPWAbilityTask_TargetFromSource::TargetFromSource(OwnerAbility);
+		if (!ActiveTargetTask)
+			return;
+
+		ActiveTargetTask->ValidData.AddDynamic(
+			this, &UPWAbilityModule_InstantEffect::OnTargetDataReady);
+
+		ActiveTargetTask->ReadyForActivation();
+		return;
+	}
+
+	// No Targeting - Use Self
+	UAbilitySystemComponent* SourceASC = OwnerAbility->GetAbilitySystemComponentFromActorInfo();
+	if (!SourceASC) return;
+
+	Targets.Reset();
+	Targets.Add(GetPawn());
+
+	FScopedPredictionWindow Prediction(SourceASC);
+	for (AActor* Target : Targets)
+	{
+		if (!Target) continue;
+		UAbilitySystemComponent* TargetASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(Target);
+		if (TargetASC)
+			Effect->ApplyEffects(SourceASC, TargetASC);
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("[%s] Applied instant effect to %d targets."), *GetNameSafe(this), Targets.Num());
+}
+
+void UPWAbilityModule_InstantEffect::RemoveEffects()
+{
+	auto* Effect = OwnerAbility->GetEffectModule();
+	if (!Effect) return;
+
+	UAbilitySystemComponent* SourceASC = OwnerAbility->GetAbilitySystemComponentFromActorInfo();
+	if (!SourceASC) return;
+
+	for (AActor* Target : Targets)
+	{
+		if (!Target) continue;
+		UAbilitySystemComponent* TargetASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(Target);
+		if (TargetASC)
+			Effect->RemoveEffects(SourceASC, TargetASC);
+	}
+}
+
+void UPWAbilityModule_InstantEffect::GetRequiredDataModules_Implementation(TArray<TSubclassOf<UPWDataModule>>& OutRequiredModules)
+{
+	OutRequiredModules.Add(UPWAbilityModule_Effect::StaticClass());
+}
+
+void UPWAbilityModule_InstantEffect::OnTargetDataReady(const FGameplayAbilityTargetDataHandle& DataHandle, const struct FPWTargetingResult& Result)
+{
+	if (!OwnerAbility) return;
+
+	auto* Effect = OwnerAbility->GetEffectModule();
+	if (!Effect) return;
+
+	UAbilitySystemComponent* SourceASC = OwnerAbility->GetAbilitySystemComponentFromActorInfo();
+	if (!SourceASC) return;
+
+	Targets = Result.HitActors;
+	if (Targets.Num() == 0)
+		return;
+
+	FScopedPredictionWindow Prediction(SourceASC);
+
+	for (AActor* Target : Targets)
+	{
+		if (!Target) continue;
+		UAbilitySystemComponent* TargetASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(Target);
+		if (TargetASC)
+			Effect->RemoveEffects(SourceASC, TargetASC);
+	}
+}

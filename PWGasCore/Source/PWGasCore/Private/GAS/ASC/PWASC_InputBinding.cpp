@@ -12,7 +12,6 @@ FPWASC_InputBinding::FPWASC_InputBinding(UPWAbilitySystemComponent& InASC) : ASC
 {
 }
 
-
 void FPWASC_InputBinding::AbilityInputTagPressed(const FGameplayTag& InputTag)
 {
 	if (!InputTag.IsValid()) return;
@@ -23,6 +22,7 @@ void FPWASC_InputBinding::AbilityInputTagPressed(const FGameplayTag& InputTag)
 		HandleContradictingAbilities();
 
 		ASC.AbilitySpecInputPressed(*Spec);
+		
 		if (!Spec->IsActive() && ASC.TryActivateAbility(Spec->Handle))
 		{
 			UE_LOG(LogGameplayTags, Log, TEXT("Activating ability: %s  through input tag: %s"), *ASC.Data().GetAbilityFromSpec(*Spec).ToString(), *InputTag.ToString());
@@ -32,7 +32,7 @@ void FPWASC_InputBinding::AbilityInputTagPressed(const FGameplayTag& InputTag)
 	ASC.SendInputEvent(InputTag, EInputEventType::Pressed);
 }
 
-void FPWASC_InputBinding::AbilityInputTagReleased(const FGameplayTag& InputTag)
+void FPWASC_InputBinding::AbilityInputTagReleased(const FGameplayTag& InputTag) const
 {
 	if (!InputTag.IsValid()) return;
 

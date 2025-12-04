@@ -10,7 +10,7 @@ class USpellParams;
 /**
  * 
  */
-UCLASS()
+UCLASS(Blueprintable, BlueprintType, EditInlineNew, DefaultToInstanced)
 class PWGASCORE_API UPWDataModule : public UPWAbilityModule
 {
 	GENERATED_BODY()

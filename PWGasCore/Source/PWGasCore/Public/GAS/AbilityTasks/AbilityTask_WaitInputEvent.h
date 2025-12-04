@@ -32,6 +32,8 @@ public:
 protected:
 	void OnGameplayEventReceived(const FGameplayEventData* Payload);
 
+	UGameplayAbility* ownerability;
+	
 	/** Tag to listen for (e.g. Input.Mouse.Left) */
 	UPROPERTY()
 	FGameplayTag WatchedInputTag;

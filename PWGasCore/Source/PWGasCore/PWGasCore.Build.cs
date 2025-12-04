@@ -32,7 +32,7 @@ public class PWGasCore : ModuleRules
 				"GameplayTags",
 				"DeveloperSettings",
 				"GameplayTasks",
-				"PWSharedTypes"
+				"PWSharedTypes",
 				// ... add other public dependencies that you statically link with here ...
 			}
 		);
@@ -48,7 +48,9 @@ public class PWGasCore : ModuleRules
 				"GameplayAbilities",
 				"GameplayTags",
 				"DeveloperSettings",
-				"PWContracts"
+				"PWContracts", 
+				"GameplayMessageRuntime",
+				"Niagara"
 				// ... add private dependencies that you statically link with here ...	
 			}
 		);

@@ -4,7 +4,7 @@
 #include "GAS/Abilities/Library/ModuleFunctions.h"
 
 #include "Ability/SpellParams.h"
-#include "GAS/Abilities/Modules/ActionModules/PWAbilityActorModule.h"
+#include "GAS/Abilities/Modules/ActionModules/PWAbilityModule_Actor.h"
 
 UEffectSpellParamsExtension* UModuleFunctions::GetEffectParams(const USpellParams* Params)
 {

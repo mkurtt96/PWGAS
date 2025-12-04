@@ -1,0 +1,24 @@
+﻿// copyright mkurtt96
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "PWDataModule.h"
+#include "ScalableFloat.h"
+#include "PWAbilityModule_Radius.generated.h"
+
+UCLASS(Blueprintable, BlueprintType, EditInlineNew, DefaultToInstanced)
+class PWGASCORE_API UPWAbilityModule_Radius : public UPWDataModule
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FScalableFloat Radius = 400.f;
+
+	UFUNCTION(BlueprintCallable, Category="Module")
+	float GetRadiusValue() const;
+
+	virtual void ExtendParams(USpellParams* Params) const override;
+	virtual void Initialize(UPWModularGameplayAbility* InOwner) override;
+};

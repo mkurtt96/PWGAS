@@ -17,6 +17,7 @@ GAMEPLAYATTRIBUTE_VALUE_GETTER(PropertyName) \
 GAMEPLAYATTRIBUTE_VALUE_SETTER(PropertyName) \
 GAMEPLAYATTRIBUTE_VALUE_INITTER(PropertyName)
 
+//Attribute set doesn't work with macros, But you can use this as snippets then substitute the macro call
 #define DeclareReplicatedAttribute(PropertyName, CategoryName) \
 UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_##PropertyName, Category = CategoryName) \
 FGameplayAttributeData PropertyName; \
@@ -24,10 +25,13 @@ UFUNCTION() void OnRep_##PropertyName(const FGameplayAttributeData& OldValue) co
 { GAMEPLAYATTRIBUTE_REPNOTIFY(ThisClass, PropertyName, OldValue); } \
 ATTRIBUTE_ACCESSORS(ThisClass, PropertyName)
 
+//Attribute set doesn't work with macros, But you can use this as snippets then substitute the macro call
 #define DeclareLocalAttribute(PropertyName, CategoryName) \
 UPROPERTY(BlueprintReadOnly, Category = CategoryName) \
 FGameplayAttributeData PropertyName; \
 ATTRIBUTE_ACCESSORS(ThisClass, PropertyName)
+
+
 
 UCLASS()
 class PWATTRIBUTES_API UPWAttributeSetBase : public UAttributeSet
@@ -39,6 +43,9 @@ public:
 
 	UPROPERTY()
 	TMap<FGameplayTag, FGameplayAttribute> TagsToAttributes;
+	
+	UFUNCTION(BlueprintPure, Category="PW|Attributes")
+	virtual FGameplayTag GetAttributeTag(FGameplayAttribute Attribute);
 
 	UFUNCTION(BlueprintCallable, Category="PW|Attributes")
 	virtual float GetAttributeValue(const FGameplayTag& AttributeTag) const;

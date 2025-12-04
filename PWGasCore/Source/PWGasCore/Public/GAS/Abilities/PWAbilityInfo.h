@@ -20,8 +20,17 @@ public:
 	
 	UPROPERTY(BlueprintReadOnly)
 	int32 CurrentLevel = 0;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability")
 	int32 MaxLevel = 1;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
+	FText Name = FText();
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (MultiLine=true), Category = "UI")
+	FText Description = FText();
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (MultiLine=true), Category = "UI")
+	FText NextDescription = FText();
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
+	TObjectPtr<const UMaterialInstance> IconMaterial = nullptr;
 	
 	UPROPERTY(BlueprintReadOnly)
 	FGameplayTag InputTag = FGameplayTag();

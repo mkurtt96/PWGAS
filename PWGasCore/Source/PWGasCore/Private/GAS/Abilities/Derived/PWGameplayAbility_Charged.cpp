@@ -11,6 +11,13 @@ void UPWGameplayAbility_Charged::ActivateAbility(const FGameplayAbilitySpecHandl
 		StartCharging();
 }
 
+void UPWGameplayAbility_Charged::CancelAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateCancelAbility)
+{
+	StopCharging(true);
+	
+	Super::CancelAbility(Handle, ActorInfo, ActivationInfo, bReplicateCancelAbility);
+}
+
 void UPWGameplayAbility_Charged::StartCharging()
 {
 	if (bIsCharging || !GetWorld()) return;

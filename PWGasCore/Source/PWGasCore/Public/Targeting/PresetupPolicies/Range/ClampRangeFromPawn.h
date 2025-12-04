@@ -23,7 +23,6 @@ public:
 
 		const FVector Origin = Actor->GetActorLocation();
 		const FVector Target = InOut.Location;
-
 		const FVector Dir = (Target - Origin).GetSafeNormal();
 
 		if (const float Dist = FVector::Dist(Origin, Target); Dist > MaxRange)

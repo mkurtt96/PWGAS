@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GAS/Abilities/PWGameplayAbilityBase.h"
+#include "GAS/Abilities/PWModularGameplayAbility.h"
 #include "PWGameplayAbility_Confirmed.generated.h"
 
 
@@ -12,7 +12,7 @@ enum class EInputEventType : uint8;
  * 
  */
 UCLASS()
-class PWGASCORE_API UPWGameplayAbility_Confirmed : public UPWGameplayAbilityBase
+class PWGASCORE_API UPWGameplayAbility_Confirmed : public UPWModularGameplayAbility
 {
 	GENERATED_BODY()
 

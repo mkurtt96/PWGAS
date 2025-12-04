@@ -41,7 +41,8 @@ void UPWPrecastControllerComponent::StartPrecast(UPWTargetingSource* InTargeting
 void UPWPrecastControllerComponent::StopPrecast()
 {
 	SetComponentTickEnabled(false);
-	Visualizer->Hide();
+	if (Visualizer)
+		Visualizer->Hide();
 	
 	TargetingSource = nullptr;
 	RangePolicy = nullptr;
@@ -50,6 +51,11 @@ void UPWPrecastControllerComponent::StopPrecast()
 	
 	Result = FPWTargetingResult();
 	bRunning = false;
+}
+
+void UPWPrecastControllerComponent::UpdateProjectileSimConfig(const FPWProjectileSimConfig& Cfg)
+{
+	ProjCfg = Cfg;
 }
 
 void UPWPrecastControllerComponent::BeginPlay()
@@ -62,6 +68,7 @@ void UPWPrecastControllerComponent::TickComponent(float DeltaTime, ELevelTick Ti
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 	if (!bRunning) return;
+	
 	APlayerController* PC = GetPC();
 	if (!PC)
 	{

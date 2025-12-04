@@ -9,7 +9,7 @@
 /**
  * 
  */
-UCLASS()
+UCLASS(Blueprintable, BlueprintType, EditInlineNew, DefaultToInstanced)
 class PWGASCORE_API UPWControlModule : public UPWAbilityModule
 {
 	GENERATED_BODY()

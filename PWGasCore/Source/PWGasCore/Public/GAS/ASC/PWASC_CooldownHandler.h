@@ -5,12 +5,12 @@
 #include "GameplayTagContainer.h"
 
 
-class PWGASCORE_API UPWASC_CooldownHandler
+class PWGASCORE_API FPWASC_CooldownHandler
 {
 public:
 	friend class UPWAbilitySystemComponent;
-	explicit UPWASC_CooldownHandler(UPWAbilitySystemComponent& InASC) : ASC(InASC) {}
-	virtual ~UPWASC_CooldownHandler() = default;
+	explicit FPWASC_CooldownHandler(UPWAbilitySystemComponent& InASC) : ASC(InASC) {}
+	virtual ~FPWASC_CooldownHandler() = default;
 	UPWAbilitySystemComponent& ASC;
 	
 	bool GetCooldownRemainingForTag(const FGameplayTag& CooldownTag, float& TimeRemaining, float& CooldownDuration) const;

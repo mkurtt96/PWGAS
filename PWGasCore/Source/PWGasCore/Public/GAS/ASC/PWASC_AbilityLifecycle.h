@@ -2,7 +2,10 @@
 
 #pragma once
 #include "GameplayTagContainer.h"
+#include "GAS/Abilities/PWGameplayAbilityBase.h"
 
+class UGameplayAbility;
+class UPWGameplayAbilityBase;
 struct FGameplayAbilitySpec;
 struct FGameplayAbilitySpecHandle;
 struct FActiveGameplayEffect;
@@ -17,7 +20,7 @@ class PWGASCORE_API FPWASC_AbilityLifecycle
 {
 public:
 	friend class UPWAbilitySystemComponent;
-	explicit FPWASC_AbilityLifecycle(UPWAbilitySystemComponent& InASC) : ASC(InASC) {}
+	explicit FPWASC_AbilityLifecycle(UPWAbilitySystemComponent& InASC);
 	virtual ~FPWASC_AbilityLifecycle() = default;
 	UPWAbilitySystemComponent& ASC;
 	
@@ -53,4 +56,20 @@ public:
 	virtual bool ApplyDeactivationPolicies(const FGameplayAbilitySpecHandle& SpecHandle, const FGameplayTag& EventTag) const;
 	virtual bool ApplyDeactivationPolicies(const FGameplayAbilitySpec& AbilitySpec, const FGameplayTag& EventTag) const;
 	virtual void ApplyDeactivationPolicies(const FGameplayTag& EventTag) const;
+	
+	// ==  Activation Group  == //
+	// ======================== //
+	typedef TFunctionRef<bool(const UPWGameplayAbilityBase* Ability, FGameplayAbilitySpecHandle Handle)> TShouldCancelAbilityFunc;
+	void CancelAbilitiesByFunc(const TShouldCancelAbilityFunc& ShouldCancelFunc, bool bReplicateCancelAbility) const;
+	
+	bool IsActivationGroupBlocked(EPWActivationGroup Group) const;
+	void AddAbilityToActivationGroup(EPWActivationGroup Group, const UPWGameplayAbilityBase* Ability);
+	void RemoveAbilityFromActivationGroup(EPWActivationGroup Group, const UPWGameplayAbilityBase* Ability);
+	void CancelActivationGroupAbilities(EPWActivationGroup Group, const UPWGameplayAbilityBase* IgnoreAbility, bool bReplicateCancelAbility) const;
+
+private:
+	TSet<TWeakObjectPtr<const UGameplayAbility>> ActiveReplaceable;
+	TSet<TWeakObjectPtr<const UGameplayAbility>> ActiveBlocking;
+	
+	int32 ActivationGroupCounts[(uint8)EPWActivationGroup::MAX];
 };

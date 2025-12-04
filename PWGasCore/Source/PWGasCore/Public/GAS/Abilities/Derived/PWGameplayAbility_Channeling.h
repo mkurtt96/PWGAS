@@ -10,11 +10,13 @@
  * 
  */
 UCLASS()
-class PWGASCORE_API UPWGameplayAbility_Channeling : public UPWGameplayAbilityBase
+class PWGASCORE_API UPWGameplayAbility_Channeling : public UPWModularGameplayAbility
 {
 	GENERATED_BODY()
 
 protected:
+	UPWGameplayAbility_Channeling();
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Channel")
 	bool bAutoStartChannel = true;
 
@@ -33,10 +35,8 @@ protected:
 	FTimerHandle ChannelTickTimer;
 
 public:
-	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle,
-								 const FGameplayAbilityActorInfo* ActorInfo,
-								 const FGameplayAbilityActivationInfo ActivationInfo,
-								 const FGameplayEventData* TriggerEventData) override;
+	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
+	virtual void CancelAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateCancelAbility) override;
 
 	UFUNCTION(BlueprintCallable, Category="Channel")
 	virtual void StartChanneling();
@@ -58,7 +58,10 @@ protected:
 	void OnChannelTick(float ElapsedTime);
 
 	UFUNCTION(BlueprintImplementableEvent, Category="Channel")
-	void OnChannelEnd(bool bWasCanceled);
+	void OnChannelEnd();
+
+	UFUNCTION(BlueprintImplementableEvent, Category="Channel")
+	void OnChannelCancelled();
 
 	void HandleChannelTick();
 };

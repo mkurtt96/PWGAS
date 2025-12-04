@@ -7,7 +7,7 @@
 #include "PWAbilityModule.generated.h"
 
 class UPWDataModule;
-class UPWGameplayAbilityBase;
+class UPWModularGameplayAbility;
 /**
  * 
  */
@@ -18,10 +18,10 @@ class PWGASCORE_API UPWAbilityModule : public UObject
 
 public:
 	UPROPERTY(BlueprintReadOnly, Category="Ability")
-	TObjectPtr<UPWGameplayAbilityBase> OwnerAbility = nullptr;
+	TObjectPtr<UPWModularGameplayAbility> OwnerAbility = nullptr;
 
 	UFUNCTION(BlueprintCallable, Category="Ability")
-	virtual void Initialize(UPWGameplayAbilityBase* InOwner);
+	virtual void Initialize(UPWModularGameplayAbility* InOwner);
 
 	UFUNCTION(BlueprintNativeEvent, Category="Ability")
 	void OnAbilityActivated();

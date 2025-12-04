@@ -9,8 +9,12 @@
 #include "PWASC_DataManagement.h"
 #include "PWASC_EffectLifecycle.h"
 #include "PWASC_InputBinding.h"
+#include "PWASC_VfxLifecycle.h"
 #include "PWAbilitySystemComponent.generated.h"
 
+struct FPWNiagaraEntry;
+struct FPWASCVfxParams;
+class UNiagaraComponent;
 enum class EInputEventType : uint8;
 DECLARE_MULTICAST_DELEGATE_TwoParams(FAnyGameplayTagChangedDelegate, FGameplayTag& /*Tag*/, int /*Count*/);
 
@@ -34,7 +38,8 @@ public:
 	FPWASC_AbilityLifecycle& Abilities() const { return *AbilityLifecycle; }
 	FPWASC_EffectLifecycle& Effects() const { return *EffectLifecycle; }
 	FPWASC_InputBinding& Input() const { return *InputBinding; }
-	UPWASC_CooldownHandler& Cooldown() const { return *CooldownHandler; }
+	FPWASC_CooldownHandler& Cooldown() const { return *CooldownHandler; }
+	FPWASC_VfxLifecycle& Vfx() const { return *VfxLifecycle; }
 
 	//Ability Helpers
 	UFUNCTION(BlueprintCallable, Category="GASCore|Ability", meta=(DisplayName="Add Abilities"))
@@ -64,21 +69,31 @@ public:
 
 	UFUNCTION(Server, Unreliable)
 	void ServerSendInputEvent(const FGameplayTag& EventTag, const FGameplayEventData& Payload);
-
 	UFUNCTION(BlueprintCallable, Category="GASCore|Input")
 	void SendInputEvent(const FGameplayTag& InputTag, EInputEventType EventType);
+	
+	UFUNCTION(NetMulticast, Reliable, Category="GASCore|NiagaraVfx")
+	void Multicast_PlayNiagara(const FPWNiagaraEntry& Entry);
+	UFUNCTION(NetMulticast, Reliable, Category="GASCore|NiagaraVfx")
+	void Multicast_StopNiagara(const TArray<int32>& Ids);
 	
 protected:
 	virtual TUniquePtr<FPWASC_DataManagement> CreateDataManagement();
 	virtual TUniquePtr<FPWASC_AbilityLifecycle> CreateAbilityLifecycle();
 	virtual TUniquePtr<FPWASC_EffectLifecycle> CreateEffectLifecycle();
 	virtual TUniquePtr<FPWASC_InputBinding> CreateInputBinding();
-	virtual TUniquePtr<UPWASC_CooldownHandler> CreateCooldownHandler();
+	virtual TUniquePtr<FPWASC_CooldownHandler> CreateCooldownHandler();
+	virtual TUniquePtr<FPWASC_VfxLifecycle> CreateVfxLifecycle();
 
+	virtual void NotifyAbilityActivated(const FGameplayAbilitySpecHandle Handle, UGameplayAbility* Ability) override;
+	virtual void NotifyAbilityEnded(FGameplayAbilitySpecHandle Handle, UGameplayAbility* Ability, bool bWasCancelled) override;
+	
 private:
 	TUniquePtr<FPWASC_DataManagement> DataManagement;
 	TUniquePtr<FPWASC_AbilityLifecycle> AbilityLifecycle;
 	TUniquePtr<FPWASC_EffectLifecycle> EffectLifecycle;
 	TUniquePtr<FPWASC_InputBinding> InputBinding;
-	TUniquePtr<UPWASC_CooldownHandler> CooldownHandler;
+	TUniquePtr<FPWASC_CooldownHandler> CooldownHandler;
+	TUniquePtr<FPWASC_VfxLifecycle> VfxLifecycle;
+
 };

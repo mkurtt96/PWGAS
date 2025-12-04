@@ -3,7 +3,7 @@
 
 #include "GAS/Abilities/Modules/ActionModules/PWActionModule.h"
 
-#include "GAS/Abilities/PWGameplayAbilityBase.h"
+#include "GAS/Abilities/PWModularGameplayAbility.h"
 
 
 USpellParams* UPWActionModule::MakeSpellParams_Implementation(const FPWTargetingResult& Target)
